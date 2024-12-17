@@ -36,8 +36,17 @@ def load_cache_from_file(hash_cache_path=FilePathConfig.hash_cache_path) -> dict
                 hash_cache[filepath] = hash_value
         else:
             hash_cache = {}
-            with open(hash_cache_path, 'w') as fp:
-                json.dump({}, fp, indent=2, ensure_ascii=False)
+            try:
+                with open(hash_cache_path, 'w') as fp:
+                    json.dump({}, fp, indent=2, ensure_ascii=False)
+            except Exception as e:
+                print(f'[Cache] Creating cache failed: {e}')
+                try:
+                    os.makedirs(os.path.dirname(hash_cache_path), exist_ok=True)
+                    json.dump({}, open(hash_cache_path, 'w'), indent=2, ensure_ascii=False)
+                except Exception as e:
+                    print(f'[Cache] Creating cache failed: {e}')
+                    raise e
                     
     except Exception as e:
         print(f'[Cache] Loading failed: {e}')
