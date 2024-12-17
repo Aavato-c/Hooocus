@@ -146,3 +146,5 @@ def download_models(default_model, previous_default_models, checkpoint_downloads
         load_file_from_url(url=url, model_dir=FolderPathsConfig.path_vae, file_name=file_name)
 
     return default_model, checkpoint_downloads
+
+
