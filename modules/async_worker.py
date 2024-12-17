@@ -497,7 +497,11 @@ class ImageTaskProcessor:
         time.sleep(0.01)
         self.update_progress(f"Processing all tasks ...", 0)
         for task in self.generation_tasks:
-            self.process_single_task(task)
+            if not task.has_been_processed:
+                self.process_single_task(task)
+                task.has_been_processed = True
+        self.update_progress(f"All tasks processed.", 0)
+
 
     # OK
     def prepare_task_for_processing(self, task: config.ImageGenerationObject):
