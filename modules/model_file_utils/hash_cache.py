@@ -82,7 +82,7 @@ def save_cache_to_file(filename=None, hash_value=None) -> bool:
 
 def init_cache(model_filenames, paths_checkpoints, lora_filenames, paths_loras):
     hash_cache = {}
-    max_workers = launch_arguments.args.rebuild_hash_cache if launch_arguments.args.rebuild_hash_cache > 0 else cpu_count()
+    max_workers = LAUNCH_ARGS.rebuild_hash_cache if LAUNCH_ARGS.rebuild_hash_cache > 0 else cpu_count()
     result = rebuild_cache(lora_filenames, model_filenames, paths_checkpoints, paths_loras, max_workers)
 
     # write cache to file again for sorting and cleanup of invalid cache entries
