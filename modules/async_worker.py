@@ -1114,6 +1114,14 @@ class ImageTaskProcessor:
     # OK
     def patch_samplers(self):
         task: config.ImageGenerationObject = self.generation_task
+        
+        def _patch_discrete(unet, scheduler_name):
+            return opModelSamplingDiscrete.patch(unet, scheduler_name, False)[0]
+
+        def _patch_edm(unet, scheduler_name):
+            return opModelSamplingContinuousEDM.patch(
+                unet, scheduler_name, 120.0, 0.002)[0]
+        
         if task.scheduler_name in ["lcm", "tcd"]:
             final_scheduler_name = "sgm_uniform"
             if self.pipeline.final_unet is not None:
@@ -1140,12 +1148,6 @@ class ImageTaskProcessor:
         else:
             final_scheduler_name = task.scheduler_name
 
-        def _patch_discrete(unet, scheduler_name):
-            return opModelSamplingDiscrete.patch(unet, scheduler_name, False)[0]
-
-        def _patch_edm(unet, scheduler_name):
-            return opModelSamplingContinuousEDM.patch(
-                unet, scheduler_name, 120.0, 0.002)[0]
 
         return final_scheduler_name
 
