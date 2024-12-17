@@ -83,6 +83,7 @@ class EarlyReturnException(BaseException):
 class ImageTaskProcessor:
     def __init__(self):
         self.initialize_processor()
+        self.preview_yelder = None
 
     def initialize_processor(self):
         self.pid = os.getpid()
@@ -196,12 +197,28 @@ class ImageTaskProcessor:
             callback_function(previewer_start + step, x0, x, previewer_end, y)
         
         """
-        def _callback(step, x0, x, total_steps, y):
+        def _callback(step, x0, x, total_steps, y, preview_yelder=_self.preview_yelder):
             if step == 0:
                 _self.callback_steps = 0
             _self.callback_steps += (100 - preparation_steps) / float(_self.all_steps)
+            logger.debug(f"Callback step: {step + 1}/{total_steps}, image {id + 1}/{len(_self.tasks)}")
+            is_finished = step == total_steps - 1
+            if preview_yelder is not None:
+                #TODO REMOVE
+                pass
+            if not is_finished:
+                _self.yields.append(['preview', (
+                    int(_self.current_progress + _self.callback_steps),
                     f'Sampling step {step + 1}/{_self.all_steps}, image {id + 1}/{len(_self.tasks)} ...'), y, uid])
+            
+            elif is_finished:
+                _self.yields.append(['finish', (
+                    _self.current_progress + 100,
                     f'Image {id + 1}/{len(_self.tasks)} finished ...'), y, uid])
+                
+            else:
+                raise EarlyReturnException()
+            
 
         if 'cn' in _self.goals:
             prepared_task.encoded_positive_cond, 
