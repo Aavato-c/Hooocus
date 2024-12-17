@@ -22,6 +22,12 @@ class LoggingUtil:
         file_handler.setFormatter(formatter)
         self.logger.addHandler(file_handler)
 
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        stream_handler.setLevel(logging.DEBUG)
+        self.logger.addHandler(stream_handler)
+        
+
         if dont_overwrite_progress_bar != True:
             stream_handler = logging.StreamHandler()
             stream_handler.setFormatter(formatter)
