@@ -637,7 +637,7 @@ class ImageTaskProcessor:
                 self.update_progress(f"[{tasklet}, {imgs}, {img_paths}]", 0)
 
             #self.generate_image_wall_if_needed(task)
-            self.yields.append(["finish", self.results])
+            self.yields.append(["finish", self.results, task.uid])
             self.pipeline.prepare_text_encoder(async_call=True)
         except Exception as e:
             self.update_progress(f"Error processing task: {e}", 0)
