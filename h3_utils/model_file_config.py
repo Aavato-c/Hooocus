@@ -35,21 +35,19 @@ class _BaseModelFile(BaseModel):
     url_of_model: str = None
     
     def full_path(self):
-        return os.path.join(self.model_path_folder, self.model_path_basename)
+        return os.path.join(self.folder_path_of_model, self.name_of_model)
 
     def download_model(self):
-        if not self.model_path_folder:
+        if not self.folder_path_of_model:
             raise ValueError("model_path_folder is not set.")
 
-        if self.nameof_model is None:
-            if self.model_path_basename:
-                return os.path.join(self.model_path_folder, self.model_path_basename)
+        
         load_file_from_url(
-            url=self.model_url,
-            model_dir=self.model_path_folder,
-            file_name=self.nameof_model
+            url=self.url_of_model,
+            model_dir=self.folder_path_of_model,
+            file_name=self.basename_of_model
         )
-        return os.path.join(self.model_path_folder, self.model_path_basename)
+        return os.path.join(self.folder_path_of_model, self.name_of_model)
 
 
 
