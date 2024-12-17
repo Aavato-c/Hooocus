@@ -38,7 +38,8 @@ class GlobalModelManagement:
         with self.interrupt_processing_mutex:
             if self.interrupt_processing:
                 self.interrupt_processing = False
-                raise InterruptProcessingException()
+                log.debug('Interrupted')
+                raise InterruptProcessingException('Processing Interrupted')
 
 
 global_model_management = GlobalModelManagement()
