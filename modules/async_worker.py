@@ -102,6 +102,9 @@ class ImageTaskProcessor:
         self.update_progress(f"Initialized ImageTaskProcessor with PID {self.pid}", 0)
 
     def initialize_current_task(self, new_task: config.ImageGenerationObject = None):
+        new_task._prepare_downloads()
+        new_task._prepare_controlnet_model_downloads()
+        new_task.download_models()
         self.generation_task = new_task
         self.patch_settings = PatchSettings()
         self.inpaint_worker: InpaintWorker = None
@@ -156,12 +159,12 @@ class ImageTaskProcessor:
         self.prepare_attributes()
         self.update_controlnet_models()
 
+
     def yield_result(self, imgs: list, do_not_show_finished_images=False):
         """Processes a list of images, optionally censors NSFW content, and updates the results."""
         imgs = self.censor_images_if_needed(imgs)
-        self.results.extend(imgs)
-        if not do_not_show_finished_images:
-            self.yields.append(["results", self.results])
+        self.results += imgs
+
 
     # OK
     def censor_images_if_needed(self, imgs: list) -> list:
@@ -178,7 +181,6 @@ class ImageTaskProcessor:
 
         _self.final_scheduler_name = _self.patch_samplers()
         _self.update_progress(f"Final scheduler: {_self.final_scheduler_name}")
-        # self.yields.append(['preview', (self.current_progress, 'Moving model to device ...')])
         _self.interrupt_if_needed()
         
         
