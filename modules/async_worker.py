@@ -182,6 +182,7 @@ class ImageTaskProcessor:
         _self.final_scheduler_name = _self.patch_samplers()
         _self.update_progress(f"Final scheduler: {_self.final_scheduler_name}")
         _self.interrupt_if_needed()
+        _self.processing = True
         
         
         processing_start_time = time.perf_counter()
