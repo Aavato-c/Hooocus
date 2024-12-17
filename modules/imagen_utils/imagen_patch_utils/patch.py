@@ -4,6 +4,8 @@ from httpx import patch
 import torch
 import time
 import math
+from modules.imagen_utils.imagen_patch_utils.patch_clip import patch_all_clip
+from modules.imagen_utils.imagen_patch_utils.patch_precision import patch_all_precision
 import ldm_patched.modules.model_base
 import ldm_patched.ldm.modules.diffusionmodules.openaimodel
 import ldm_patched.modules.model_management
@@ -27,11 +29,10 @@ from h3_utils.config import LAUNCH_ARGS
 from ldm_patched.modules.samplers import calc_cond_uncond_batch
 from ldm_patched.k_diffusion.sampling import BatchedBrownianTree
 from ldm_patched.ldm.modules.diffusionmodules.openaimodel import forward_timestep_embed, apply_control
-from modules.patch_modules.patch_precision import patch_all_precision
-from modules.patch_modules.patch_clip import patch_all_clip
+
 from pydantic import BaseModel
 
-from unavoided_global_hell.unavoided_global_vars import (
+from unavoided_globals.unavoided_global_vars import (
     patch_settings_GLOBAL_CAUTION, 
     PatchSettings,
     inpaintworker_current_task_GLOBAL_CAUTION,

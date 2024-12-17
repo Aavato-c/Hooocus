@@ -1,13 +1,16 @@
+from modules.imagen_utils.imagen_patch_utils import patch
 import modules.core as core
 import os
 import sys
 
 from h3_utils import config
 from h3_utils.path_configs import FolderPathsConfig
+import modules.imagen_utils.imagen_patch_utils
+import modules.imagen_utils.imagen_patch_utils.patch
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import torch
-import modules.patch_modules.patch
+
 import h3_utils.config
 import h3_utils.flags
 import ldm_patched.modules.model_management
@@ -22,7 +25,7 @@ from modules.util import get_file_from_folder_list, get_enabled_loras
 from h3_utils.config import LAUNCH_ARGS, DefaultConfigImageGen
 from h3_utils.logging_util import LoggingUtil
 
-from unavoided_global_hell.unavoided_global_vars import patch_settings_GLOBAL_CAUTION
+from unavoided_globals.unavoided_global_vars import patch_settings_GLOBAL_CAUTION
 
 logger = LoggingUtil().get_logger()
 logger.name = 'default_pipeline'
@@ -87,6 +90,7 @@ class DefaultPipeline:
             return
 
         self.model_base = core.load_model(filename, vae_filename)
+
         print(f'Base model loaded: {self.model_base.filename}')
         print(f'VAE loaded: {self.model_base.vae_filename}')
         return
@@ -394,7 +398,7 @@ class DefaultPipeline:
         sigma_max = float(sigma_max.cpu().numpy())
         print(f'[Sampler] sigma_min = {sigma_min}, sigma_max = {sigma_max}')
 
-        modules.patch_modules.patch.BrownianTreeNoiseSamplerPatched.global_init(
+        modules.imagen_utils.imagen_patch_utils.patch.BrownianTreeNoiseSamplerPatched.global_init(
             initial_latent['samples'].to(ldm_patched.modules.model_management.get_torch_device()),
             sigma_min, sigma_max, seed=image_seed, cpu=False)
 

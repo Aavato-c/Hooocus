@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import safetensors.torch as sf
 
+from modules.imagen_utils.imagen_patch_utils.ops import use_patched_ops
 import ldm_patched.modules.clip_vision
 import ldm_patched.modules.model_management as model_management
 import ldm_patched.ldm.modules.attention as attention
@@ -11,7 +12,6 @@ from ldm_patched.modules.ops import manual_cast
 
 from extras.resampler import Resampler
 from modules.core import StableDiffusionModel, numpy_to_pytorch
-from modules.patch_modules.ops import use_patched_ops
 from h3_utils.model_file_config import BaseControlNetTask
 
 

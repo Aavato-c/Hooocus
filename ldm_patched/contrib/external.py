@@ -19,6 +19,7 @@ import safetensors.torch
 pass  # sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "ldm_patched"))
 
 
+from unavoided_globals import global_model_management
 import ldm_patched.modules.diffusers_load
 import ldm_patched.modules.samplers
 import ldm_patched.modules.sample
@@ -29,7 +30,7 @@ import ldm_patched.modules.controlnet
 import ldm_patched.modules.clip_vision
 
 import ldm_patched.modules.model_management
-from unavoided_global_hell.global_model_management import global_model_management
+
 from h3_utils.config import LAUNCH_ARGS as args
 
 import importlib

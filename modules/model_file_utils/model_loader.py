@@ -1,6 +1,9 @@
 import os
 from urllib.parse import urlparse
 from typing import Optional
+from h3_utils.logging_util import LoggingUtil
+
+log = LoggingUtil().get_logger()
 
 
 def load_file_from_url(

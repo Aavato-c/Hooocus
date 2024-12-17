@@ -5,6 +5,8 @@ import sys
 ROOT_DIR = os.path.abspath(__file__).split("h3_utils")[0]
 sys.path.append(ROOT_DIR)
 
+os.environ['ROOT_DIR'] = ROOT_DIR
+
 import ssl
 import platform
 

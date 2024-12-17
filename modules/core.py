@@ -3,24 +3,25 @@ import einops
 import torch
 import numpy as np
 
+from modules.imagen_utils.imagen_patch_utils import sample_hijack
+from modules.imagen_utils.lora import match_lora
 import ldm_patched.modules.model_management
 import ldm_patched.modules.model_detection
 import ldm_patched.modules.model_patcher
 import ldm_patched.modules.utils
 import ldm_patched.modules.controlnet
-import modules.sample_hijack
 import ldm_patched.modules.samplers
 import ldm_patched.modules.latent_formats
 
 from ldm_patched.modules.sd import load_checkpoint_guess_config
 from ldm_patched.modules.sample import prepare_mask
-from modules.lora import match_lora
+
 from modules.util import get_file_from_folder_list
 from ldm_patched.modules.lora import model_lora_keys_unet, model_lora_keys_clip
 from h3_utils.path_configs import FolderPathsConfig
 
 path_embeddings = FolderPathsConfig.path_embeddings
-from unavoided_global_hell.unavoided_global_vars import (
+from unavoided_globals.unavoided_global_vars import (
     opEmptyLatentImage,
     opVAEDecode,
     opVAEEncode,
@@ -30,7 +31,7 @@ from unavoided_global_hell.unavoided_global_vars import (
     opFreeU,
 )
 
-from unavoided_global_hell.global_model_management import global_model_management
+from unavoided_globals import global_model_management
 
 
 class StableDiffusionModel:
@@ -294,7 +295,7 @@ def ksampler(model, positive, negative, latent, seed=None, steps=30, cfg=7.0, sa
         previewer_end = steps
 
     def callback(step, x0, x, total_steps):
-        global_model_management.throw_exception_if_processing_interrupted()
+        global_model_management.global_model_management.throw_exception_if_processing_interrupted()
         y = None
         if previewer is not None and not disable_preview:
             y = previewer(x0, previewer_start + step, previewer_end)
@@ -302,9 +303,9 @@ def ksampler(model, positive, negative, latent, seed=None, steps=30, cfg=7.0, sa
             callback_function(previewer_start + step, x0, x, previewer_end, y)
 
     disable_pbar = False
-    modules.sample_hijack.current_refiner = refiner
-    modules.sample_hijack.refiner_switch_step = refiner_switch
-    ldm_patched.modules.samplers.sample = modules.sample_hijack.sample_hacked
+    sample_hijack.current_refiner = refiner
+    sample_hijack.refiner_switch_step = refiner_switch
+    ldm_patched.modules.samplers.sample = sample_hijack.sample_hacked
 
     try:
         samples = ldm_patched.modules.sample.sample(model,
@@ -320,7 +321,7 @@ def ksampler(model, positive, negative, latent, seed=None, steps=30, cfg=7.0, sa
         out = latent.copy()
         out["samples"] = samples
     finally:
-        modules.sample_hijack.current_refiner = None
+        sample_hijack.current_refiner = None
 
     return out
 

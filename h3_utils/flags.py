@@ -199,7 +199,6 @@ class Performance(_AvailableConfigsBase):
 
 
 
-
 INPAINT_ENGINE_VERSIONS = Literal["1.0", "2.5", "2.6"]
 AVAILABLE_PRESETS = get_presets()
 MODEL_FILENAMES = get_model_filenames(FolderPathsConfig.path_checkpoints)

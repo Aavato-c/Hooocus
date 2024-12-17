@@ -18,22 +18,34 @@ import time
 
 from torch import Tensor, tensor
 
+from h3_utils import logging_util
+from modules.imagen_utils.imagen_patch_utils.patch import patch_all
+from unavoided_globals import unavoided_global_vars
 from extras import face_crop, preprocessors
 from extras.expansion import safe_str
 from extras.censor import default_censor
 from modules.imagen_utils.inpaint_worker import InpaintWorker
 from modules.imagen_utils.upscale.upscaler import perform_upscale
-from unavoided_global_hell.unavoided_global_vars import PatchSettings
-from unavoided_global_hell.global_model_management import global_model_management
+from unavoided_globals.unavoided_global_vars import PatchSettings
+from unavoided_globals.global_model_management import global_model_management
+from h3_utils.model_file_config import (
+    PyraCanny,
+    CPDS,
+    ImagePromptAdapterFace,
+    ImagePromptClipVIsion,
+    ImagePromptAdapterNegative,
+    ImagePromptAdapterPlus
+)
 from h3_utils.model_file_config import (
     UpscaleModel,
     InpaintModelFiles,
     ControlNetTasks,
-    BaseControlNetModelFiles,
     SDXL_HyperSDLoRA,
     SDXL_LCM_LoRA,
     SDXL_LightningLoRA,
 )
+
+
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -45,13 +57,12 @@ from h3_utils.flags import LORA_FILENAMES, Overrides, Performance, Steps
 
 import extras.ip_adapter as ip_adapter
 
-from modules.patch_modules.patch import patch_all, patch
 from modules.util import apply_wildcards, ensure_three_channels, erode_or_dilate, get_image_shape_ceil, get_shape_ceil, parse_lora_references_from_prompt, remove_empty_str, remove_performance_lora, resample_image, resize_image, set_image_shape_ceil
 from modules.imagen_utils.private_logger import log
 from modules.default_pipeline import DefaultPipeline
 from modules.core import apply_controlnet, apply_freeu, encode_vae, numpy_to_pytorch
 
-from unavoided_global_hell.unavoided_global_vars import (
+from unavoided_globals.unavoided_global_vars import (
     patch_settings_GLOBAL_CAUTION,
     opModelSamplingDiscrete,
     opModelSamplingContinuousEDM,

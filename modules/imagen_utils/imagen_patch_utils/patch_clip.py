@@ -2,6 +2,7 @@
 
 import os
 import torch
+from modules.imagen_utils.imagen_patch_utils.ops import use_patched_ops
 import ldm_patched.controlnet.cldm
 import ldm_patched.k_diffusion.sampling
 import ldm_patched.ldm.modules.attention
@@ -18,7 +19,8 @@ import ldm_patched.modules.sd1_clip
 import ldm_patched.modules.clip_vision
 import ldm_patched.modules.ops as ops
 
-from modules.patch_modules.ops import use_patched_ops
+
+
 from transformers import CLIPTextModel, CLIPTextConfig, modeling_utils, CLIPVisionConfig, CLIPVisionModelWithProjection
 
 
