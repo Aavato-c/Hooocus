@@ -881,7 +881,7 @@ class ImageTaskProcessor:
         print("Enter LCM mode.")
         task: config.ImageGenerationObject = self.generation_task
         task.performance_loras += [
-            (SDXL_LCM_LoRA.download_model(), 1.0)
+            (True, SDXL_LCM_LoRA.download_model(), 1.0)
         ]
         task.refiner_model = None
         task.sampler_name = "lcm"
