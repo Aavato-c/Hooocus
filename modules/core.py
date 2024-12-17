@@ -228,6 +228,8 @@ def get_previewer(model):
 
     from h3_utils.path_configs import FolderPathsConfig
     path_vae_approx = FolderPathsConfig.path_vae_approx
+    root_dir = os.environ.get('ROOT_DIR', os.getcwd().split('modules')[0])
+    path_vae_approx = os.path.join(root_dir, path_vae_approx[2:])
     is_sdxl = isinstance(model.model.latent_format, ldm_patched.modules.latent_formats.SDXL)
     vae_approx_filename = os.path.join(path_vae_approx, 'xlvaeapp.pth' if is_sdxl else 'vaeapp_sd15.pth')
 
