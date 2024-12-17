@@ -155,10 +155,10 @@ class _LAUNCH_ARGS(BaseModel):
     # VramArgs
     always_cpu: int = False
     always_gpu: int = True
-    always_high_vram: int = -1
-    always_normal_vram: int = 1
-    always_low_vram: int = -1
-    always_no_vram: int = -1
+    always_high_vram: int = True
+    always_normal_vram: int = False
+    always_low_vram: int = False
+    always_no_vram: int = False
     always_offload_from_vram: bool = False
 
 
