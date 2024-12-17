@@ -35,24 +35,28 @@ class BatchTemplates:
 def generate_image_to_stream(prompt: str):
     # https://stackoverflow.com/questions/65971081/streaming-video-from-camera-in-fastapi-results-in-frozen-image-after-first-frame
     unique_id = uuid4().hex
-    imgProcessor = ImageTaskProcessor()
-    imgProcessor.generation_tasks.append(ImageGenerationObject(
-        prompt=prompt,
-        image_number=1, 
-        uid=unique_id,
-        performance_selection=Performance.EXTREME_SPEED,
-        ))
+    newtask = deepcopy(BatchTemplates.normal)
+    newtask.uid = unique_id
+    newtask.prompt = prompt
+    imgProcessor.generation_tasks.append(newtask)
+
+    # Create and run task asynchronously
     concurrent.futures.ThreadPoolExecutor().submit(imgProcessor.process_all_tasks)
+    
     finished = False
+    max_loops = 100
     while not finished:
-        time.sleep(0.01)
+        if max_loops == 0:
+            log.error('Max loops reached.')
+            break
+        max_loops -= 1
+        time.sleep(1.01)
         if len(imgProcessor.yields) > 0:
             try:
                 img_res = imgProcessor.yields.pop(0)
             except Exception as e:
                 log.error(str(e))
                 time.sleep(0.05)
-                continue
             if img_res[0] == "preview" and img_res[-1] == unique_id:
                 (flag, encodedImage) = cv2.imencode(".jpg", img_res[2])
                 if not flag:
@@ -70,8 +74,6 @@ def generate_image_to_stream(prompt: str):
                     finished = True
                     yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' +
                             bytearray(encodedImage) + b'\r\n')
-                
-
             else:
                 log.debug('No image preview generated.')
                 continue
