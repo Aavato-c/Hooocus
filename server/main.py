@@ -22,7 +22,7 @@ app = FastAPI()
 
 @app.get("/getphoto/{prompt}")
 def main(prompt: str):
-    headers = {'Content-Disposition': 'inline; filename="test.jpeg"'}
+    prompt = prompt.replace("_", " ")
     return StreamingResponse(generate_image_to_stream(prompt), media_type="multipart/x-mixed-replace; boundary=frame")
 
 
