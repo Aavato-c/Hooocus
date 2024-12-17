@@ -920,12 +920,12 @@ class ImageTaskProcessor:
                 self.update_progress(f'Downloading controlnet model for {controlnet_task.name} ...', 0)
                 for model in controlnet_task.models:
                     model.download_model()
-                    self.controlnet_pyracanny_path = BaseControlNetModelFiles.PyraCanny.full_path()
-                    self.controlnet_cpds_path = BaseControlNetModelFiles.CPDS.full_path()
-                    self.clip_vision_path = BaseControlNetModelFiles.ImagePromptClipVIsion.full_path()
-                    self.ip_negative_path = BaseControlNetModelFiles.ImagePromptAdapterNegative.full_path()
-                    self.ip_adapter_path = BaseControlNetModelFiles.ImagePromptAdapterPlus.full_path()
-                    self.ip_adapter_face_path = BaseControlNetModelFiles.ImagePromptAdapterFace.full_path()
+                    self.controlnet_pyracanny_path = PyraCanny.full_path()
+                    self.controlnet_cpds_path = CPDS.full_path()
+                    self.clip_vision_path = ImagePromptClipVIsion.full_path()
+                    self.ip_negative_path = ImagePromptAdapterNegative.full_path()
+                    self.ip_adapter_path = ImagePromptAdapterPlus.full_path()
+                    self.ip_adapter_face_path = ImagePromptAdapterFace.full_path()
 
     def apply_vary(self):
         task: config.ImageGenerationObject = self.generation_task
