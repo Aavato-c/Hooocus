@@ -258,7 +258,6 @@ class ImageTaskProcessor:
 
         imgs = _self.post_process_images(imgs)
         # current_progress = int(self.current_progress + (100 - preparation_steps) / float(self.all_steps) * parent_task.steps)
-        # self.yields.append(progressbar(current_progress, f"Saving image {current_task_id + 1}/{total_count} to system ..."))
         _self.update_progress(f"Saving image to system ...")
         img_paths = save_images(imgs, "webp")
         _self.update_progress(f"Image saved to system.")
