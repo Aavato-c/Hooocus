@@ -101,7 +101,7 @@ class _LAUNCH_ARGS(BaseModel):
     
     # Etc
     web_upload_size: float = 100.0
-    hf_mirror: str = "https:/huggingface.co"
+    hf_mirror: str = "https://huggingface.co"
     external_working_path: str = None
     temp_path: str = None
     cache_path: str = None
