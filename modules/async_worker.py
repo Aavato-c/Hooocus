@@ -494,7 +494,6 @@ class ImageTaskProcessor:
     # OK
     def process_all_tasks(self):
         """Processes all tasks in the generation queue."""
-        time.sleep(0.01)
         self.update_progress(f"Processing all tasks ...", 0)
         for task in self.generation_tasks:
             if not task.has_been_processed:
