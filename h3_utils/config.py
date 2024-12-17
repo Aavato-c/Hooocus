@@ -275,6 +275,8 @@ class _InitialImageGenerationParams(BaseModel):
         arbitrary_types_allowed = True
 
     uid: str = Field("", description="The default uid to use.")
+    has_been_processed: bool = False
+    
     prompt_negative: str = Field(DEFAULT_PRESET["prompt_negative"], description="The default negative prompt to use.")
     prompt: Optional[str] = Field(None, description="The default prompt to use.")
     negative_prompt: str = ""
@@ -283,9 +285,8 @@ class _InitialImageGenerationParams(BaseModel):
     width: Optional[int] = Field(None, description="The default width to use.")
     height: Optional[int] = Field(None, description="The default height to use.")
     
-    sample_sharpness: float = Field(DEFAULT_PRESET["sample_sharpness"], description="The default sample sharpness to use.")
+    sample_sharpness: float = Field(DEFAULT_PRESET["sample_sharpness"], description="The default sample sharpness to use.", ge=0.0, le=30.0)
     seed: int = random.randint(LAUNCH_ARGS.min_seed, LAUNCH_ARGS.max_seed)
-    #sharpness: float = Field(2.0, description="Sharpness", ge=0.0, le=30.0)
     sampler_name: KSAMPLER = DEFAULT_PRESET["sampler"]
     scheduler_name: str = DEFAULT_PRESET["scheduler"]
     
@@ -308,10 +309,10 @@ class _InitialImageGenerationParams(BaseModel):
     save_metadata_to_images: bool = Field(False, description="The default save metadata to images to use.")
     save_only_final_enhanced_image: bool = Field(False, description="The default save only final enhanced image to use.")
     aspect_ratio: SDXL_ASPECT_RATIOS = Field(DEFAULT_PRESET["aspect_ratio"], description="The default aspect ratio to use.")
-    image_number: int = Field(2, description="The default image number to use.", ge=1)
+    image_number: int = Field(1, description="The default image number to use.", ge=1)
     
-    steps: int = -1
-    original_steps: int = -1
+    steps: int = Field(-1, description="The default steps to use.")
+    original_steps: int = False
 
     adaptive_cfg: float = Field(7.0, description="The default cfg tsnr to use.", ge=1.0, le=30.0)
     cfg_scale: float = Field(DEFAULT_PRESET["cfg_scale"], description="Higher value means style is cleaner, vivider, and more artistic.", ge=1.0, le=30.0)
@@ -419,8 +420,8 @@ class ImageGenerationObject(_InitialImageGenerationParams):
 
 
     def _prepare_downloads(self):
-        self.checkpoint_downloads = DEFAULT_PRESET["checkpoint_downloads"]
-        self.embeddings_downloads = DEFAULT_PRESET["embeddings_downloads"]
+        self.checkpoint_downloads = self.checkpoint_downloads or DEFAULT_PRESET["checkpoint_downloads"]
+        self.embeddings_downloads = self.embeddings_downloads or DEFAULT_PRESET["embeddings_downloads"]
 
         self.vae_downloads = {}
 
@@ -464,7 +465,6 @@ class ImageGenerationObject(_InitialImageGenerationParams):
             file_name='pytorch_model.bin'
         )
 
-        expansion_path = os.path.join(FolderPathsConfig.path_fooocus_expansion, 'pytorch_model.bin')
         load_file_from_url(
             url='https://huggingface.co/lllyasviel/misc/resolve/main/fooocus_expansion.bin',
             model_dir=FolderPathsConfig.path_fooocus_expansion,
