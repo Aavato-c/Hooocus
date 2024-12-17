@@ -474,6 +474,7 @@ class ImageTaskProcessor:
         
         i = 1
         for task in tasks:
+            logger.info(f"Encoding positive {i + 1} ...")
             self.update_progress(f"Encoding positive #{i + 1} ...", 0)
             task.encoded_positive_cond = self.pipeline.clip_encode(texts=task.positive_basic_workloads, pool_top_k=task.positive_top_k)
             i += 1
@@ -482,7 +483,7 @@ class ImageTaskProcessor:
         for task in tasks:
             if abs(float(self.generation_task.cfg_scale) - 1.0) < 1e-4:
                 self.update_progress(f"Encoding negative #{i + 1} ...", 0)
-                task.encoded_negative_cond = self.pipeline.clone_cond(task.positive_basic_workloads)
+                task.encoded_negative_cond = self.pipeline.clone_cond(task.encoded_positive_cond)
             else:
                 self.update_progress(f"Encoding negative #{i + 1} ...", 0)
                 task.encoded_negative_cond = self.pipeline.clip_encode(texts=task.negative_basic_workloads, pool_top_k=task.negative_top_k)
