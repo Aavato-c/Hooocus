@@ -184,6 +184,7 @@ class ImageTaskProcessor:
         processing_start_time = time.perf_counter()
         preparation_steps = _self.current_progress
         id = _self.tasks.index(prepared_task)
+        uid = prepared_task.uid
 
         """
         def callback(step, x0, x, total_steps):
@@ -199,9 +200,8 @@ class ImageTaskProcessor:
             if step == 0:
                 _self.callback_steps = 0
             _self.callback_steps += (100 - preparation_steps) / float(_self.all_steps)
-            _self.yields.append(['preview', (
-                int(_self.current_progress + _self.callback_steps),
-                f'Sampling step {step + 1}/{_self.all_steps}, image {id + 1}/{len(_self.tasks)} ...'), y])
+                    f'Sampling step {step + 1}/{_self.all_steps}, image {id + 1}/{len(_self.tasks)} ...'), y, uid])
+                    f'Image {id + 1}/{len(_self.tasks)} finished ...'), y, uid])
 
         if 'cn' in _self.goals:
             prepared_task.encoded_positive_cond, 
@@ -243,7 +243,8 @@ class ImageTaskProcessor:
         _self.update_progress(f"Saving image to system ...")
         img_paths = save_images(imgs, "webp")
         _self.update_progress(f"Image saved to system.")
-        _self.yield_result(imgs)
+        for _img in imgs:
+            _self.yields.append(['result', (100, f'Image {id + 1}/{len(_self.tasks)} finished ...'), _img, uid])
         # TODO: Log the image paths
         processing_time = time.perf_counter() - processing_start_time
         print(f"Processing time: {processing_time:.2f} seconds")
@@ -346,6 +347,7 @@ class ImageTaskProcessor:
         tasks = []
         self.update_progress("Creating tasks ...")
         for i in range(self.generation_task.image_number):
+            uid = self.generation_task.uid
             task_seed, task_rng = self.get_task_seed_and_rng(i)
 
             task_prompt, task_negative_prompt, task_extra_positive_prompts, task_extra_negative_prompts = self.get_task_prompts(task_rng, i)
@@ -357,7 +359,7 @@ class ImageTaskProcessor:
 
             tasks.append(self.create_a_tasklet(task_seed, task_prompt, task_negative_prompt, positive_basic_workloads,
                                                negative_basic_workloads, task_styles, task_extra_positive_prompts,
-                                               task_extra_negative_prompts))
+                                               task_extra_negative_prompts, uid))
         if self.use_prompt_expansion:
             tasks = self.expand_prompts(tasks)
         self.encode_prompts(tasks)
@@ -415,7 +417,7 @@ class ImageTaskProcessor:
 
     # OK
     def create_a_tasklet(self, task_seed, task_prompt, task_negative_prompt, positive_basic_workloads,
-                         negative_basic_workloads, task_styles, task_extra_positive_prompts, task_extra_negative_prompts):
+                         negative_basic_workloads, task_styles, task_extra_positive_prompts, task_extra_negative_prompts, uid):
         """Creates and returns a task dictionary."""
         self.update_progress(f"Creating task dictionary for seed {task_seed} ...", 0)
         tasklet_object = config.TaskletObject(
@@ -432,8 +434,10 @@ class ImageTaskProcessor:
             log_positive_prompt="\n".join([task_prompt] + task_extra_positive_prompts),
             log_negative_prompt="\n".join([task_negative_prompt] + task_extra_negative_prompts),
             styles=task_styles,
+            uid=uid
         )
-        self.update_progress(f"Tasklet: {tasklet_object}", 0)
+        #self.update_progress(f"Tasklet: {tasklet_object}", 0)
+        self.update_progress(f"Tasklet created with uid {uid}.", 0)
         return tasklet_object
 
     # OK

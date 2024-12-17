@@ -274,6 +274,7 @@ class _InitialImageGenerationParams(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+    uid: str = Field("", description="The default uid to use.")
     prompt_negative: str = Field(DEFAULT_PRESET["prompt_negative"], description="The default negative prompt to use.")
     prompt: Optional[str] = Field(None, description="The default prompt to use.")
     negative_prompt: str = ""
@@ -379,6 +380,7 @@ class TaskletObject(BaseModel):
         orm_mode = True
 
 
+    uid: str
     task_seed: int 
     task_prompt: str
     task_negative_prompt: str
