@@ -1,4 +1,5 @@
 import concurrent.futures
+from copy import deepcopy
 import io
 import subprocess
 import concurrent
