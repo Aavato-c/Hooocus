@@ -12,12 +12,23 @@ prepare_environment()
 
 from modules.async_worker import ImageTaskProcessor
 import ldm_patched.modules.model_management
-from h3_utils.config import ImageGenerationObject, OverWriteControls
+from h3_utils.config import ImageGenerationObject, OverWriteControls, DefaultConfigImageGen
 from unavoided_globals.global_model_management import global_model_management
 from PIL import Image
 from h3_utils.logging_util import LoggingUtil
 log = LoggingUtil().get_logger()
 import time
+
+imgProcessor = ImageTaskProcessor()
+
+class BatchTemplates:
+    _shared = DefaultConfigImageGen
+    _shared.image_number = 1
+
+    normal = ImageGenerationObject(
+        cfg_scale=15.0,
+        sample_sharpness=15.0,
+        )
 
 
 
