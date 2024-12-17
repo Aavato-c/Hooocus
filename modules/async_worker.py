@@ -676,7 +676,6 @@ class ImageTaskProcessor:
             self.interrupt_if_needed()
             self.cleanup_after_task()
             self.processing = False
-            self.processing_status = False
 
     # OK
     def update_progress(self, status: str = None, step: int = 1):
