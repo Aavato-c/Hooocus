@@ -74,7 +74,9 @@ class StableDiffusionModel:
 
         loras_to_load = []
 
-        for _bool, filename, weight in loras:
+
+        for lora_single in loras:
+            _bool, filename, weight = lora_single
             if filename == 'None':
                 continue
 
