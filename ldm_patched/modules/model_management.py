@@ -35,7 +35,7 @@ cpu_state = CPUState.GPU
 
 total_vram = 0
 
-lowvram_available = True
+lowvram_available = False
 xpu_available = False
 
 if args.pytorch_deterministic:
