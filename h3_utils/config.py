@@ -415,8 +415,103 @@ class ImageGenerationObject(_InitialImageGenerationParams):
     class Config:
         arbitrary_types_allowed = True
         orm_mode = True
+
+
+
+    def _prepare_downloads(self):
+        self.checkpoint_downloads = DEFAULT_PRESET["checkpoint_downloads"]
+        self.embeddings_downloads = DEFAULT_PRESET["embeddings_downloads"]
+
+        self.vae_downloads = {}
+
+        for lora in self.loras:
+            if lora[1] or lora[1] != "None":
+                self.lora_downloads[lora[1]] = lora[1]
+
+        if self.vae_name != "Default (model)" and self.vae_name != "":
+            self.vae_downloads[self.vae_name] = self.vae_name
+
+
+
+    def _prepare_controlnet_model_downloads(self):
+        if self.controlnet_tasks is None:
+            return
+        for task in self.controlnet_tasks:
+            for model in task.all_models:
+                model.download_model()
+                
+
+
+
+
+    
+    def download_models(self):
+        default_model = self.base_model_name
+        from modules.util import get_file_from_folder_list
+        vae_approx_filenames = [
+            ('xlvaeapp.pth', 'https://huggingface.co/lllyasviel/misc/resolve/main/xlvaeapp.pth'),
+            ('vaeapp_sd15.pth', 'https://huggingface.co/lllyasviel/misc/resolve/main/vaeapp_sd15.pt'),
+            ('xl-to-v1_interposer-v4.0.safetensors',
+            'https://huggingface.co/mashb1t/misc/resolve/main/xl-to-v1_interposer-v4.0.safetensors')
+        ]
+
+        for file_name, url in vae_approx_filenames:
+            load_file_from_url(url=url, model_dir=FolderPathsConfig.path_vae_approx, file_name=file_name)
+
+        load_file_from_url(
+            url='https://huggingface.co/lllyasviel/misc/resolve/main/fooocus_expansion.bin',
+            model_dir=FolderPathsConfig.path_fooocus_expansion,
+            file_name='pytorch_model.bin'
+        )
+
+        expansion_path = os.path.join(FolderPathsConfig.path_fooocus_expansion, 'pytorch_model.bin')
+        load_file_from_url(
+            url='https://huggingface.co/lllyasviel/misc/resolve/main/fooocus_expansion.bin',
+            model_dir=FolderPathsConfig.path_fooocus_expansion,
+            file_name='pytorch_model.bin'
+        )
+
+        if LAUNCH_ARGS.disable_preset_download:
+            print('Skipped model download.')
+            return default_model, self.checkpoint_downloads
+
+        if not LAUNCH_ARGS.always_download_new_model:
+            if not os.path.isfile(get_file_from_folder_list(default_model, FolderPathsConfig.path_checkpoints)):
+                for alternative_model_name in self.previous_default_models:
+                    if os.path.isfile(get_file_from_folder_list(alternative_model_name, FolderPathsConfig.path_checkpoints)):
+                        print(f'You do not have [{default_model}] but you have [{alternative_model_name}].')
+                        print(f'Fooocus will use [{alternative_model_name}] to avoid downloading new models, '
+                            f'but you are not using the latest models.')
+                        print('Use --always-download-new-model to avoid fallback and always get new models.')
+                        self.checkpoint_downloads = {}
+                        default_model = alternative_model_name
+                        break
+
+
+        #for file_name, url in checkpoint_downloads.items():
+        for file_name, url in self.checkpoint_downloads.items():
+            model_dir = os.path.dirname(get_file_from_folder_list(file_name, FolderPathsConfig.path_checkpoints))
+            load_file_from_url(url=url, model_dir=model_dir, file_name=file_name)
+        for file_name, url in self.embeddings_downloads.items():
+            load_file_from_url(url=url, model_dir=FolderPathsConfig.path_embeddings, file_name=file_name)
+        for file_name, url in self.lora_downloads.items():
+            load_file_from_url(url="https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_offset_example-lora_1.0.safetensors", 
+                               model_dir=FolderPathsConfig.path_loras, file_name='sd_xl_offset_example-lora_1.0.safetensors')
+        for file_name, url in self.vae_downloads.items():
+            load_file_from_url(url=url, model_dir=FolderPathsConfig.path_vae, file_name=file_name)
+
+        return default_model, self.checkpoint_downloads
+
+
+
+
+
+
+
+
     
     
+
 HooocusConfig = ImageGenerationObject(**current_preset)
 DefaultConfigImageGen = ImageGenerationObject(**DEFAULT_PRESET)
 
