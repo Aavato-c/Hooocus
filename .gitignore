@@ -65,3 +65,11 @@ modules/image_generation_utils.py
 h3_utils/meta/graph.sh
 h3_utils/OLD.datamodels.py
 utils/meta/graph.sh
+venv312*
+cuda*.run
+cuda*.deb
+test.png
+gunicorn_start
+servertypes.sh
+.xana-image-backend.conf
+xana-image-backend.conf
