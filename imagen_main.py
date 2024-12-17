@@ -88,15 +88,15 @@ def generate_image(task: ImageGenerationObject):
         with global_model_management.interrupt_processing_mutex:
             global_model_management.interrupt_processing = False
         
-        print(task.refiner_model)
-        imgProcessor = ImageTaskProcessor()
-        imgProcessor.generation_tasks.append(task)
-        finished = False
+            print(task.refiner_model)
+            imgProcessor = ImageTaskProcessor()
+            imgProcessor.generation_tasks.append(task)
+            finished = False
 
-        time.sleep(0.01)
-        imgProcessor.process_all_tasks()
-        print('Image generation finished.')
-        ...
+            time.sleep(0.01)
+            imgProcessor.process_all_tasks()
+            print('Image generation finished.')
+            ...
 
     except Exception as e:
         print(str(e))
