@@ -8,10 +8,6 @@ import urllib
 parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # To solve the problem of importing modules from different directories
 os.sys.path.insert(0,parentdir) 
 
-
-
-import httpx
-import pytest
 from requests import Session
 import dotenv
 
