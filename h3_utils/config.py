@@ -471,17 +471,17 @@ class ImageGenerationObject(_InitialImageGenerationParams):
         )
 
         if LAUNCH_ARGS.disable_preset_download:
-            print('Skipped model download.')
+            log.info('Skipped model download.')
             return default_model, self.checkpoint_downloads
 
         if not LAUNCH_ARGS.always_download_new_model:
             if not os.path.isfile(get_file_from_folder_list(default_model, FolderPathsConfig.path_checkpoints)):
                 for alternative_model_name in self.previous_default_models:
                     if os.path.isfile(get_file_from_folder_list(alternative_model_name, FolderPathsConfig.path_checkpoints)):
-                        print(f'You do not have [{default_model}] but you have [{alternative_model_name}].')
-                        print(f'Fooocus will use [{alternative_model_name}] to avoid downloading new models, '
+                        log.info(f'You do not have [{default_model}] but you have [{alternative_model_name}].')
+                        log.info(f'Fooocus will use [{alternative_model_name}] to avoid downloading new models, '
                             f'but you are not using the latest models.')
-                        print('Use --always-download-new-model to avoid fallback and always get new models.')
+                        log.info('Use --always-download-new-model to avoid fallback and always get new models.')
                         self.checkpoint_downloads = {}
                         default_model = alternative_model_name
                         break
