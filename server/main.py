@@ -1,4 +1,3 @@
-import time
 import os
 import sys
 
@@ -12,9 +11,11 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse, StreamingResponse
 from imagen_main import generate_image_to_stream
 import uvicorn
-from PIL import Image
+from h3_utils.logging_util import LoggingUtil
+log = LoggingUtil(name="main.py").get_logger()
 
 app = FastAPI()
+
 
 
 @app.get("/")
