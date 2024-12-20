@@ -17,7 +17,6 @@ def load_file_from_url(
 
     Returns the path to the downloaded file.
     """
-    log.info(f"Downloading file from url: {url}")
     domain = os.environ.get("HF_MIRROR", "https://huggingface.co").rstrip('/')
     url = str.replace(url, "https://huggingface.co", domain, 1)
     os.makedirs(model_dir, exist_ok=True)
@@ -26,7 +25,9 @@ def load_file_from_url(
         file_name = os.path.basename(parts.path)
     cached_file = os.path.abspath(os.path.join(model_dir, file_name))
     if not os.path.exists(cached_file):
-        print(f'Downloading: "{url}" to {cached_file}\n')
+        log.info(f'Downloading: "{url}" to {cached_file}\n')
         from torch.hub import download_url_to_file
         download_url_to_file(url, cached_file, progress=progress)
+    else:
+        log.debug(f'File already exists: {cached_file}. Skipping download.')
     return cached_file
