@@ -230,7 +230,7 @@ class ImageTaskProcessor:
                 prepared_task.encoded_positive_cond, 
                 prepared_task.encoded_negative_cond)
 
-        memory_usage = torch.cuda.memory_allocated() / 1024 / 1024
+        #memory_usage = torch.cuda.memory_allocated() / 1024 / 1024
         imgs = _self.pipeline.process_diffusion(
             # Shared parameters of all tasklets
             steps=parent_task.steps,
