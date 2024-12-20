@@ -230,6 +230,7 @@ class ImageTaskProcessor:
                 prepared_task.encoded_positive_cond, 
                 prepared_task.encoded_negative_cond)
 
+        memory_usage = torch.cuda.memory_allocated() / 1024 / 1024
         imgs = _self.pipeline.process_diffusion(
             # Shared parameters of all tasklets
             steps=parent_task.steps,
@@ -267,6 +268,7 @@ class ImageTaskProcessor:
         # TODO: Log the image paths
         processing_time = time.perf_counter() - processing_start_time
         logger.warning(f"Processing time: {processing_time:.2f} seconds")
+        
         return imgs, img_paths
 
     # OK
@@ -531,7 +533,13 @@ class ImageTaskProcessor:
         task.height = overrides.height
 
         if not self.skip_prompt_processing:
-            self.process_prompt()
+            try:
+                self.process_prompt()
+            except Exception as e:
+                if "CUDA out of memory" in str(e):
+                    logger.error(f"Cuda out of memory error: {e}")
+                    torch.cuda.empty_cache()
+                    return
 
         logger.info(f'[Parameters] Sampler = {task.sampler_name} - {task.scheduler_name}')
         logger.info(f'[Parameters] Steps = {task.steps} - {task.refiner_switch}')
@@ -819,7 +827,8 @@ class ImageTaskProcessor:
     # OK
     def _set_hyper_sd_defaults(self):
         task: config.ImageGenerationObject = self.generation_task
-        task.performance_loras += [(SDXL_HyperSDLoRA.download_model(), 0.8)]
+        SDXL_HyperSDLoRA.download_model()
+        task.performance_loras += [(True, SDXL_HyperSDLoRA.name_of_model, 0.8)]
         task.refiner_model = None
         task.sampler_name = "dpmpp_sde_gpu"
         task.scheduler_name = "karras"

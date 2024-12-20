@@ -13,7 +13,7 @@ class LoggingUtil:
             self.logger = logging.getLogger(random_chars)
         else:
             self.logger = logging.getLogger(name)
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         file_handler = logging.FileHandler('logs/combined.log')
         file_handler.setLevel(logging.DEBUG)

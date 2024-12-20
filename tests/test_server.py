@@ -1,8 +1,7 @@
-import os
-from random import randbytes
+import os, sys
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__).split("tests")[0])))
 
-import urllib
 # These variables are used in the auth/auth_handlers.py:verify_user function
 
 parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # To solve the problem of importing modules from different directories
@@ -13,18 +12,14 @@ import dotenv
 
 from fastapi import Response
 
-from utils_for_testing import test_client_main
 from h3_utils.logging_util import LoggingUtil
 
 dotenv.load_dotenv()
 log = LoggingUtil(name="TESTING").get_logger()
 
 
-
-#client = test_client_main
-
-
 session = Session()
+
 
 def test_getphoto():
     response = session.get("http://127.0.0.1:8000/getphoto/this_is_a_test_cat_oil_painting_sun_moon", stream=True)

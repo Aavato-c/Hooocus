@@ -31,7 +31,7 @@ from h3_utils.flags import EXAMPLE_ENHANCE_DETECTION_PROMPTS, INPAINT_MASK_CLOTH
 
 log = LoggingUtil().get_logger()
 
-preset_chosen: str = "Realistic" # Modify this to change the preset
+preset_chosen: str = "Hoc_default" # Modify this to change the preset
 current_preset = {}
 
 try:
@@ -81,7 +81,7 @@ class _LAUNCH_ARGS(BaseModel):
    
     # General args
     enable_auto_describe_image: bool = Field(False, description="Enables automatic description of uov and enhance image when prompt is empty.")
-    preview_option: LatentPreviewMethod = LatentPreviewMethod.NoPreviews
+    preview_option: LatentPreviewMethod = LatentPreviewMethod.Auto
     wildcards_max_bfs_depth: int = 64
     disable_image_log: bool = Field(False, description="Prevent writing images and logs to the outputs folder.")
     disable_analytics: bool = Field(False, description="Disables analytics for Gradio.")
