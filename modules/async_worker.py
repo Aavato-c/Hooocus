@@ -16,6 +16,7 @@ import PIL.Image
 import numpy as np
 import time
 
+from regex import T
 from torch import Tensor, tensor
 
 from h3_utils import logging_util
@@ -99,7 +100,7 @@ class ImageTaskProcessor:
 
         self.ip_adapter = ip_adapter.IpaAdapterManagement()
 
-        self.update_progress(f"Initialized ImageTaskProcessor with PID {self.pid}", 0)
+        logger.info(f"Initialized ImageTaskProcessor with PID {self.pid}")
 
     def initialize_current_task(self, new_task: config.ImageGenerationObject = None):
         new_task._prepare_downloads()
@@ -180,7 +181,7 @@ class ImageTaskProcessor:
         parent_task: config.ImageGenerationObject = _self.generation_task
 
         _self.final_scheduler_name = _self.patch_samplers()
-        _self.update_progress(f"Final scheduler: {_self.final_scheduler_name}")
+        logger.debug(f"Final scheduler: {_self.final_scheduler_name}")
         _self.interrupt_if_needed()
         _self.processing = True
         
@@ -259,14 +260,14 @@ class ImageTaskProcessor:
 
         imgs = _self.post_process_images(imgs)
         # current_progress = int(self.current_progress + (100 - preparation_steps) / float(self.all_steps) * parent_task.steps)
-        _self.update_progress(f"Saving image to system ...")
+        logger.debug(f"Saving image to system ...")
         img_paths = save_images(imgs, "webp")
-        _self.update_progress(f"Image saved to system.")
+        logger.info(f"Image saved to system.")
         for _img in imgs:
             _self.yields.append(['result', (100, f'Image {id + 1}/{len(_self.tasks)} finished ...'), _img, uid])
         # TODO: Log the image paths
         processing_time = time.perf_counter() - processing_start_time
-        print(f"Processing time: {processing_time:.2f} seconds")
+        logger.warning(f"Processing time: {processing_time:.2f} seconds")
         _self.processing = False
         return imgs, img_paths
 
@@ -277,7 +278,7 @@ class ImageTaskProcessor:
             if isinstance(var, np.ndarray):
                 del var
             else:
-                self.update_progress("Variable is not a numpy array, skipping deletion and setting to none.", 0)
+                logger.info("Variable is not a numpy array, skipping deletion and setting to none.")
                 var = None
 
     # OK
@@ -310,7 +311,7 @@ class ImageTaskProcessor:
         if self.inpaint_worker:
             imgs = [self.inpaint_worker.post_process(x) for x in imgs]
         else:
-            self.update_progress("No inpaint worker available, skipping post-processing", 0)
+            logger.info("No inpaint worker available, skipping post-processing")
         return imgs
 
     # OK
@@ -329,7 +330,7 @@ class ImageTaskProcessor:
         )
 
         self.pipeline.set_clip_skip(self.generation_task.clip_skip)
-        self.update_progress(f"Processing prompts ...", 0)
+        logger.info(f"Processing prompts ...")
 
         self.create_tasks()
         return
@@ -364,7 +365,7 @@ class ImageTaskProcessor:
     def create_tasks(self):
         """Creates tasks for image generation."""
         tasks = []
-        self.update_progress("Creating tasks ...")
+        logger.debug(f"Creating tasks ...")
         for i in range(self.generation_task.image_number):
             uid = self.generation_task.uid
             task_seed, task_rng = self.get_task_seed_and_rng(i)
@@ -438,7 +439,7 @@ class ImageTaskProcessor:
     def create_a_tasklet(self, task_seed, task_prompt, task_negative_prompt, positive_basic_workloads,
                          negative_basic_workloads, task_styles, task_extra_positive_prompts, task_extra_negative_prompts, uid):
         """Creates and returns a task dictionary."""
-        self.update_progress(f"Creating task dictionary for seed {task_seed} ...", 0)
+        logger.info(f"Creating task dictionary for seed {task_seed} ...")
         tasklet_object = config.TaskletObject(
             task_seed=task_seed,
             task_prompt=task_prompt,
@@ -455,17 +456,17 @@ class ImageTaskProcessor:
             styles=task_styles,
             uid=uid
         )
-        #self.update_progress(f"Tasklet: {tasklet_object}", 0)
-        self.update_progress(f"Tasklet created with uid {uid}.", 0)
+        #logger.info(f"Tasklet: {tasklet_object}")
+        logger.info(f"Tasklet created with uid {uid}.")
         return tasklet_object
 
     # OK
     def expand_prompts(self, tasks: List[config.TaskletObject]):
         """Expands the prompts for task."""
         for i, task in enumerate(tasks):
-            self.update_progress(f"Expanding prompt i + 1 ...", 0)
+            logger.info(f"Expanding prompt i + 1 ...")
             expansion = self.pipeline.final_expansion(task.task_prompt, task.task_seed)
-            self.update_progress(f"[Prompt Expansion] {expansion}", 0)
+            logger.info(f"[Prompt Expansion] {expansion}")
             task.expansion = expansion
             task.positive_basic_workloads = copy.deepcopy(task.positive_basic_workloads) + [expansion]
         return tasks
@@ -477,17 +478,17 @@ class ImageTaskProcessor:
         i = 1
         for task in tasks:
             logger.info(f"Encoding positive {i + 1} ...")
-            self.update_progress(f"Encoding positive #{i + 1} ...", 0)
+            logger.info(f"Encoding positive #{i + 1} ...")
             task.encoded_positive_cond = self.pipeline.clip_encode(texts=task.positive_basic_workloads, pool_top_k=task.positive_top_k)
             i += 1
 
         i = 1
         for task in tasks:
             if abs(float(self.generation_task.cfg_scale) - 1.0) < 1e-4:
-                self.update_progress(f"Encoding negative #{i + 1} ...", 0)
+                logger.info(f"Encoding negative #{i + 1} ...")
                 task.encoded_negative_cond = self.pipeline.clone_cond(task.encoded_positive_cond)
             else:
-                self.update_progress(f"Encoding negative #{i + 1} ...", 0)
+                logger.info(f"Encoding negative #{i + 1} ...")
                 task.encoded_negative_cond = self.pipeline.clip_encode(texts=task.negative_basic_workloads, pool_top_k=task.negative_top_k)
             i += 1
 
@@ -495,12 +496,11 @@ class ImageTaskProcessor:
     # OK
     def process_all_tasks(self):
         """Processes all tasks in the generation queue."""
-        self.update_progress(f"Processing all tasks ...", 0)
-        for task in self.generation_tasks:
-            if not task.has_been_processed:
-                self.process_single_task(task)
-                task.has_been_processed = True
-        self.update_progress(f"All tasks processed.", 0)
+        logger.info(f"Processing all tasks ...")
+        while len(self.generation_tasks) > 0:
+            task = self.generation_tasks.pop(0)
+            self.process_single_task(task)
+        logger.info(f"All tasks processed.")
 
 
     # OK
@@ -527,8 +527,8 @@ class ImageTaskProcessor:
         if not self.skip_prompt_processing:
             self.process_prompt()
 
-        self.update_progress(f'[Parameters] Sampler = {task.sampler_name} - {task.scheduler_name}', 0)
-        self.update_progress(f'[Parameters] Steps = {task.steps} - {task.refiner_switch}', 0)
+        logger.info(f'[Parameters] Sampler = {task.sampler_name} - {task.scheduler_name}')
+        logger.info(f'[Parameters] Steps = {task.steps} - {task.refiner_switch}')
 
         if 'vary' in self.goals:
             self.apply_vary()
@@ -551,7 +551,7 @@ class ImageTaskProcessor:
                 return
 
         if 'inpaint' in self.goals:
-            self.update_progress("NOT IMPLEMENTED YET", 0)
+            logger.info("NOT IMPLEMENTED YET")
             """ (denoising_strength, 
              initial_latent, 
              width, 
@@ -598,18 +598,18 @@ class ImageTaskProcessor:
 
         self.all_steps = max(1, self.all_steps)
 
-        self.update_progress(f"Denosing strength: {self.denoising_strength}")
-        self.update_progress(f"Steps: {task.steps}", 0)
+        logger.debug(f"Denosing strength: {self.denoising_strength}")
+        logger.info(f"Steps: {task.steps}")
 
         if self.initial_latent:
             log_shape = initial_latent['samples'].shape
         else:
             log_shape = f'Image Space {(task.height, task.width)}'
 
-        self.update_progress(f'[Parameters] Initial Latent shape: {log_shape}', 0)
+        logger.info(f'[Parameters] Initial Latent shape: {log_shape}')
 
         preparation_time = time.perf_counter() - self.preparation_start_time
-        print(f'Preparation time: {preparation_time:.2f} seconds')
+        logger.warning(f'Preparation time: {preparation_time:.2f} seconds')
 
         return True
 
@@ -617,7 +617,7 @@ class ImageTaskProcessor:
     def patch_freeu_to_core(self):
         if not self.generation_task.freeu_controls:
             return
-        self.update_progress(f"FreeU is enabled!", 0)
+        logger.info(f"FreeU is enabled!")
         self.pipeline.final_unet = apply_freeu(
             self.pipeline.final_unet,
             self.generation_task.freeu_controls.freeu_b1,
@@ -633,14 +633,13 @@ class ImageTaskProcessor:
             self.processing = False
             for tasklet in self.tasks:
                 imgs, img_paths =  self.process_tasklet(tasklet)
-                self.update_progress(f"Tasklet processed.", 0)
-                self.update_progress(f"[{tasklet}, {imgs}, {img_paths}]", 0)
+                logger.info(f"Tasklet processed.")
 
             #self.generate_image_wall_if_needed(task)
             self.yields.append(["finish", self.results, task.uid])
             self.pipeline.prepare_text_encoder(async_call=True)
         except Exception as e:
-            self.update_progress(f"Error processing task: {e}", 0)
+            logger.info(f"Error processing task: {e}")
             traceback.print_exc()
             self.yields.append(["finish", self.results])
         finally:
@@ -677,45 +676,7 @@ class ImageTaskProcessor:
             self.cleanup_after_task()
             self.processing = False
 
-    # OK
-    def update_progress(self, status: str = None, step: int = 1):
-        """ self.current_progress += 1
-        percentage = self.current_progress / self.total_progress * 100
-        # Inspiration for a print that overwrites itself
-        #   sys.stdout.write('\r')
-        #   sys.stdout.write("[%-20s] %d%%" % ('='*i, 5*i))
-        #   sys.stdout.flush()
-        percentage = int(percentage)
-        sys.stdout.write("\r")
-        sys.stdout.write(f"[{'=' * percentage}{' ' * (100 - percentage)}] {percentage}%")
-        sys.stdout.flush() """
-
-        bar_max_length = 100
-        
-        self.current_progress += step
-        percentage = self.current_progress / self.total_progress * 100
-        percentage = percentage/10
-        percentage = int(percentage)
-
-        # Clear the previous output
-        sys.stdout.write("\033[F")  # Move cursor up one line
-        sys.stdout.write("\033[K")  # Clear the line 
-
-        # Move the old status upwards
-        sys.stdout.write("\033[A")
-        
-        # Print the status
-        if status:
-            sys.stdout.write(f"Status: {status}\n")
-
-        # Print the progress bar
-
-        sys.stdout.write(f"[{'=' * percentage}{' ' * (10 - percentage)}] {percentage}%\n")
-        sys.stdout.flush() # This is needed to actually print the status
-
-    # TODO
-    # Start the worker thread? How to implement?
-    # start_worker_thread()
+    
 
     # OK
     def prepare_image_inputs(self):
@@ -764,18 +725,20 @@ class ImageTaskProcessor:
 
                 self.upscale_model_path = UpscaleModel.download_model()
                 if inpaint_options.inpaint_engine_version:
-                    self.update_progress('Downloading inpainter ...', 0)
+                    logger.info('Downloading inpainter ...')
+                    # Regex to find the update_progress: 
+                    # r"*self.update_progress\('*', 0\)"
                     self.inpaint_head_model_path = InpaintModelFiles.InpaintHead.download_model()
                     self.inpaint_patch_model_path = InpaintModelFiles.download_based_on_version(inpaint_options.inpaint_engine_version)
                     self.base_model_additional_loras += [(self.inpaint_patch_model_path, 1.0)]
-                    self.update_progress(f'[Inpaint] Current inpaint model is {self.inpaint_patch_model_path}', 0)
+                    logger.info(f'[Inpaint] Current inpaint model is {self.inpaint_patch_model_path}')
 
                     if self.generation_task.refiner_model:
                         self.use_synthetic_refiner = True
                         self.generation_task.refiner_switch = 0.8
                 else:
                     self.inpaint_head_model_path, self.inpaint_patch_model_path = None, None
-                    self.update_progress(f'[Inpaint] Parameterized inpaint is disabled.', 0)
+                    logger.info(f'[Inpaint] Parameterized inpaint is disabled.')
                 if inpaint_options.inpaint_additional_prompt:
                     if not self.generation_task.prompt:
                         self.generation_task.prompt = inpaint_options.inpaint_additional_prompt
@@ -787,11 +750,11 @@ class ImageTaskProcessor:
                 self.generation_task.mix_image_prompt_and_vary_upscale or \
                 self.generation_task.mix_image_prompt_and_inpaint:
             self.goals.append('cn')
-            self.update_progress('Downloading control models ...', 0)
+            logger.info('Downloading control models ...')
             self.update_controlnet_models()
 
         if self.generation_task.image_input_mode == 'enhance' and self.generation_task.enhance_input_image:
-            self.update_progress('Getting input image for enhancement ...', 0)
+            logger.info('Getting input image for enhancement ...')
             self.goals.append('enhance')
             self.skip_prompt_processing = True
             self.generation_task.enhance_input_image = ensure_three_channels(self.generation_task.input_image['image'])
@@ -867,7 +830,9 @@ class ImageTaskProcessor:
     def _set_lightning_defaults(self):
         task: config.ImageGenerationObject = self.generation_task
         print("Enter Lightning mode.")
-        task.performance_loras += [SDXL_LightningLoRA.download_model(), 1.0]
+        SDXL_LightningLoRA.download_model()
+
+        task.performance_loras.append([True, SDXL_LightningLoRA.name_of_model, 1.0])
         task.refiner_model = None
         task.sampler_name = "euler"
         task.scheduler_name = "sgm_uniform"
@@ -883,9 +848,8 @@ class ImageTaskProcessor:
     def _set_lcm_defaults(self):
         print("Enter LCM mode.")
         task: config.ImageGenerationObject = self.generation_task
-        task.performance_loras += [
-            (True, SDXL_LCM_LoRA.download_model(), 1.0)
-        ]
+        SDXL_LCM_LoRA.download_model()
+        task.performance_loras.append([True, SDXL_LCM_LoRA.name_of_model, 1.0])
         task.refiner_model = None
         task.sampler_name = "lcm"
         task.scheduler_name = "lcm"
@@ -920,7 +884,7 @@ class ImageTaskProcessor:
         task: config.ImageGenerationObject = self.generation_task
         if task.controlnet_tasks:
             for controlnet_task in task.controlnet_tasks:
-                self.update_progress(f'Downloading controlnet model for {controlnet_task.name} ...', 0)
+                logger.info(f'Downloading controlnet model for {controlnet_task.name} ...')
                 for model in controlnet_task.models:
                     model.download_model()
                     self.controlnet_pyracanny_path = PyraCanny.full_path()
@@ -942,10 +906,10 @@ class ImageTaskProcessor:
 
         shape_ceil = get_image_shape_ceil(uov_input_image)
         if shape_ceil < 1024:
-            self.update_progress(f'[Vary] Image is resized because it is too small.', 0)
+            logger.info(f'[Vary] Image is resized because it is too small.')
             shape_ceil = 1024
         elif shape_ceil > 2048:
-            self.update_progress(f'[Vary] Image is resized because it is too big.', 0)
+            logger.info(f'[Vary] Image is resized because it is too big.')
             shape_ceil = 2048
         uov_input_image = set_image_shape_ceil(uov_input_image, shape_ceil)
         initial_pixels = numpy_to_pytorch(uov_input_image)
@@ -962,7 +926,7 @@ class ImageTaskProcessor:
         B, C, H, W = initial_latent['samples'].shape
         width = W * 8
         height = H * 8
-        self.update_progress(f'Final resolution is {str((width, height))}.', 0)
+        logger.info(f'Final resolution is {str((width, height))}.')
 
         task.uov_input_image = uov_input_image
         self.denoising_strength = denoising_strength
@@ -978,9 +942,9 @@ class ImageTaskProcessor:
     def apply_upscale(self):
         task: config.ImageGenerationObject = self.generation_task
         H, W, C = task.uov_input_image.shape
-        self.update_progress(f"Upscaling image from {str((W, H))}...")
+        logger.info(f"Upscaling image from {str((W, H))} ...")
         uov_input_image = perform_upscale(uov_input_image)
-        self.update_progress(f'Image upscaled.', 0)
+        logger.info(f'Image upscaled.')
         if '1.5x' in task.uov_method:
             f = 1.5
         elif '2x' in task.uov_method:
@@ -989,7 +953,7 @@ class ImageTaskProcessor:
             f = 1.0
         shape_ceil = get_shape_ceil(H * f, W * f)
         if shape_ceil < 1024:
-            self.update_progress(f'[Upscale] Image is resized because it is too small.', 0)
+            logger.info(f'[Upscale] Image is resized because it is too small.')
             uov_input_image = set_image_shape_ceil(uov_input_image, 1024)
             shape_ceil = 1024
         else:
@@ -1034,7 +998,7 @@ class ImageTaskProcessor:
         self.cleanup_bowl.append(initial_latent)
         width = W * 8
         height = H * 8
-        self.update_progress(f'Final resolution is {str((width, height))}.', 0)
+        logger.info(f'Final resolution is {str((width, height))}.')
         return (
             direct_return,
             uov_input_image,
