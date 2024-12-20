@@ -10,43 +10,25 @@ import threading
 from uuid import uuid4
 import cv2
 from numpy import ndarray
-from sympy import EX
 from h3_utils.flags import Performance
+from h3_utils.img_processor_globlal import BatchTemplates
 from h3_utils.launch.launch import prepare_environment
 prepare_environment()
 
 from modules.async_worker import ImageTaskProcessor
 import ldm_patched.modules.model_management
-from h3_utils.config import LAUNCH_ARGS, ImageGenerationObject, OverWriteControls, DefaultConfigImageGen, HooocusConfig
-from unavoided_globals.global_model_management import global_model_management
 from PIL import Image, ImageDraw, ImageFont
 from h3_utils.logging_util import LoggingUtil
 import time
-from unavoided_globals.unavoided_global_vars import IPM
+from h3_utils.config import LAUNCH_ARGS
+from h3_utils.img_processor_globlal import imgProcessor
 
 log = LoggingUtil(name="imagen_main.py").get_logger()
 
 DEBUG_IMAGEN = False
 
 
-class BatchTemplates:
-    _shared = HooocusConfig
-    _shared.image_number = 1
 
-    normal = ImageGenerationObject(
-        )
-
-if not IPM.exists_imageprocess:
-    IPM.imgProcessorGlobal = ImageTaskProcessor()
-    global_model_management.interrupt_processing = False
-    IPM.imgProcessorGlobal.reset_cuda_memory()
-    exists_imageprocess = True
-    threading.Thread(target=IPM.imgProcessorGlobal.process_all_tasks, daemon=True).start()
-    log.info('Image processor started.')
-    imgProcessor = IPM.imgProcessorGlobal
-else:
-    log.info('Image processor already exists.')
-    imgProcessor = IPM.imgProcessorGlobal
 
 def _generate_image_with_text(prompt: str) -> bool:
     # For generating image bytearrays for sending visual information
@@ -55,7 +37,7 @@ def _generate_image_with_text(prompt: str) -> bool:
     img = Image.new('RGB', (640, 480), color = (0, 0, 0))
     d = ImageDraw.Draw(img)
     font = ImageFont.load_default().font_variant(size=60)
-    d.text((320,220), prompt, fill=(255,255,255), align='center', font=font)
+    d.text((30,220), prompt, fill=(255,255,255), align='center', font=font)
 
     # Convert to byte array
     img_byte_arr = io.BytesIO()
@@ -66,8 +48,12 @@ def _generate_image_with_text(prompt: str) -> bool:
 
 
 
-not_ready_arr = _generate_image_with_text('Not ready.')
-waiting_arr = _generate_image_with_text('Waiting...')
+not_ready_arr_1 = _generate_image_with_text('Waiting to start.')
+not_ready_arr_2 = _generate_image_with_text('Waiting to start..')
+not_ready_arr_3 = _generate_image_with_text('Waiting to start...')
+notreadys = [not_ready_arr_1, not_ready_arr_2, not_ready_arr_3]
+
+
 
 def generate_image_to_stream(prompt: str):
     # https://stackoverflow.com/questions/65971081/streaming-video-from-camera-in-fastapi-results-in-frozen-image-after-first-frame
@@ -82,6 +68,7 @@ def generate_image_to_stream(prompt: str):
     imgProcessor.generation_tasks.append(newtask)
     
     finished = False
+    notready_iter = 0
     max_loops = 1000
     while not finished:
         max_loops -= 1
@@ -115,9 +102,14 @@ def generate_image_to_stream(prompt: str):
                         yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(encodedImage) + b'\r\n')
                     else:
                         yield f"Image result generated: {max_loops}"
+
             else:
-                yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + not_ready_arr + b'\r\n')
-                continue
+                if img_res[-1] == unique_id:
+                    log.debug('Image not ready.')
+                else:
+                    notready_iter += 1
+                    photo_chosen = notreadys[notready_iter % 3]
+                    yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + photo_chosen + b'\r\n')
 
 def get_filename_from_image() -> str:
     dt_string = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
