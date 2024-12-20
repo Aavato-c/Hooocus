@@ -3,8 +3,6 @@ import os
 import random
 import string
 
-from httpx import stream
-
 if not os.path.exists('logs'):
     os.makedirs('logs')
     
@@ -15,7 +13,7 @@ class LoggingUtil:
             self.logger = logging.getLogger(random_chars)
         else:
             self.logger = logging.getLogger(name)
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.INFO)
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         file_handler = logging.FileHandler('logs/combined.log')
         file_handler.setLevel(logging.DEBUG)
