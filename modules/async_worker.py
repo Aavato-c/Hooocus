@@ -16,7 +16,6 @@ import PIL.Image
 import numpy as np
 import time
 
-from regex import T
 from torch import Tensor, tensor
 
 from h3_utils import logging_util
