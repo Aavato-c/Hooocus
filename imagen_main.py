@@ -54,8 +54,8 @@ def _generate_image_with_text(prompt: str) -> bool:
     # Generate image
     img = Image.new('RGB', (640, 480), color = (0, 0, 0))
     d = ImageDraw.Draw(img)
-    font = ImageFont.load_default().font_variant(size=40)
-    d.text((10,10), prompt, fill=(255,255,255), align='center', font=font)
+    font = ImageFont.load_default().font_variant(size=60)
+    d.text((320,220), prompt, fill=(255,255,255), align='center', font=font)
 
     # Convert to byte array
     img_byte_arr = io.BytesIO()
