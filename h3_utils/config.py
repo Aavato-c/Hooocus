@@ -56,7 +56,6 @@ class GlobalEnv:
     PYTHONFAULTHANDLER=1
 
     # launch.py
-    REINSTALL_ALL = False
     TRY_INSTALL_XFORMERS = False
 
     PYTORCH_ENABLE_MPS_FALLBACK = 1

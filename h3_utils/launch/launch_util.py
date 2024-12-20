@@ -78,32 +78,7 @@ def run_pip(command, desc=None, live=default_command_live):
         return None
 
 
-def requirements_met(requirements_file):
-    if not os.path.exists(requirements_file):
-        log.error(f"Requirements file {requirements_file} not found.")
-        return False
-    with open(requirements_file, "r", encoding="utf8") as file:
-        for line in file:
-            line = line.strip()
-            if line == "" or line.startswith('#'):
-                continue
 
-            requirement = Requirement(line)
-            package = requirement.name
-
-            try:
-                version_installed = importlib.metadata.version(package)
-                installed_version = packaging.version.parse(version_installed)
-
-                # Check if the installed version satisfies the requirement
-                if installed_version not in requirement.specifier:
-                    print(f"Version mismatch for {package}: Installed version {version_installed} does not meet requirement {requirement}")
-                    return False
-            except Exception as e:
-                print(f"Error checking version for {package}: {e}")
-                return False
-
-    return True
 
 
 def delete_folder_content(folder, prefix=None):
