@@ -16,7 +16,7 @@ prepare_environment()
 from PIL import Image, ImageDraw, ImageFont
 from h3_utils.logging_util import LoggingUtil
 import time
-from h3_utils.config import LAUNCH_ARGS
+from h3_utils.config import LAUNCH_ARGS, OverWriteControls
 from h3_utils.img_processor_globlal import imgProcessor, BatchTemplates
 
 log = LoggingUtil(name="imagen_main.py").get_logger()
@@ -49,6 +49,7 @@ not_ready_arr_2 = _generate_image_with_text('Waiting to start..')
 not_ready_arr_3 = _generate_image_with_text('Waiting to start...')
 notreadys = [not_ready_arr_1, not_ready_arr_2, not_ready_arr_3]
 
+
 def generate_image_to_stream(prompt: str):
     # https://stackoverflow.com/questions/65971081/streaming-video-from-camera-in-fastapi-results-in-frozen-image-after-first-frame
     unique_id = uuid4().hex
@@ -57,6 +58,7 @@ def generate_image_to_stream(prompt: str):
     newtask.uid = unique_id
     newtask.adaptive_cfg = 4
     newtask.cfg_scale = 2.0
+    #newtask.overwrite_controls = OverWriteControls(overwrite_step=12)
     newtask.prompt = prompt
     newtask.sample_sharpness = 8.5
     log.info(f"Using seed: {newtask.seed}\nadaptive_cfg: {newtask.adaptive_cfg}\ncfg_scale: {newtask.cfg_scale}\nprompt: {newtask.prompt}\nsample_sharpness: {newtask.sample_sharpness}")
