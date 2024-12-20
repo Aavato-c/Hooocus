@@ -133,10 +133,12 @@ class LatentPreviewMethod(_AvailableConfigsBase):
     TAESD = "taesd"
 
 
-class OutputFormat(Enum):
+class OutputFormat:
     PNG = 'png'
     JPEG = 'jpeg'
     WEBP = 'webp'
+
+OUTPUTFORMAT_LIT = Literal["png", "jpeg", "webp"]
     
 class PerformanceLoRA(_AvailableConfigsBase):
     QUALITY = None

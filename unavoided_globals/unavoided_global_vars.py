@@ -19,6 +19,11 @@ All of the known globals are defined here, and they are used in various parts of
 I'll try to tag the places where they are used with "# GLOBAL VAR USAGE"
 
 """
+class ImgProcessorManager:
+    exists_imageprocess = False
+    imgProcessorGlobal = None
+
+IPM = ImgProcessorManager()
 
 class PatchSettings(BaseModel):
     class Config:

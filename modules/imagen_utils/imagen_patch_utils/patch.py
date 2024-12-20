@@ -40,7 +40,7 @@ from unavoided_globals.unavoided_global_vars import (
 
 GeneralArgs = LAUNCH_ARGS
 
-        
+@torch.no_grad()
 def calculate_weight_patched(self, patches, weight, key):
     for p in patches:
         alpha = p[0]

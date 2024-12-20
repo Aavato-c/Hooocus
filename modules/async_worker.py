@@ -17,6 +17,7 @@ import numpy as np
 import time
 
 from torch import Tensor, tensor
+import torch
 
 from h3_utils import logging_util
 from modules.imagen_utils.imagen_patch_utils.patch import patch_all
@@ -88,6 +89,7 @@ class ImageTaskProcessor:
     def initialize_processor(self):
         self.pid = os.getpid()
         self.pipeline = DefaultPipeline()
+        self.processing = False
         
         self.log_messages: list = []
         self.yields: list = []
@@ -122,9 +124,7 @@ class ImageTaskProcessor:
 
         self.prepared_inpaint_mask = None
         self.tiled = False
-        
-        self.processing = False
-        self.processing_status = False
+
 
         self.skip_prompt_processing = False
         self.use_synthetic_refiner = False
@@ -165,6 +165,9 @@ class ImageTaskProcessor:
         imgs = self.censor_images_if_needed(imgs)
         self.results += imgs
 
+    def reset_cuda_memory(self):
+        """Resets the CUDA memory."""
+        torch.cuda.empty_cache()
 
     # OK
     def censor_images_if_needed(self, imgs: list) -> list:
@@ -178,11 +181,8 @@ class ImageTaskProcessor:
     def process_tasklet(_self, prepared_task: config.TaskletObject):
         """Processes a single image generation tasklet."""
         parent_task: config.ImageGenerationObject = _self.generation_task
-
         _self.final_scheduler_name = _self.patch_samplers()
         logger.debug(f"Final scheduler: {_self.final_scheduler_name}")
-        _self.interrupt_if_needed()
-        _self.processing = True
         
         
         processing_start_time = time.perf_counter()
@@ -261,13 +261,12 @@ class ImageTaskProcessor:
         # current_progress = int(self.current_progress + (100 - preparation_steps) / float(self.all_steps) * parent_task.steps)
         logger.debug(f"Saving image to system ...")
         img_paths = save_images(imgs, "webp")
-        logger.info(f"Image saved to system.")
+        logger.debug(f"Image saved to system.")
         for _img in imgs:
             _self.yields.append(['result', (100, f'Image {id + 1}/{len(_self.tasks)} finished ...'), _img, uid])
         # TODO: Log the image paths
         processing_time = time.perf_counter() - processing_start_time
         logger.warning(f"Processing time: {processing_time:.2f} seconds")
-        _self.processing = False
         return imgs, img_paths
 
     # OK
@@ -277,7 +276,7 @@ class ImageTaskProcessor:
             if isinstance(var, np.ndarray):
                 del var
             else:
-                logger.info("Variable is not a numpy array, skipping deletion and setting to none.")
+                logger.warning("Variable is not a numpy array, skipping deletion and setting to none.")
                 var = None
 
     # OK
@@ -310,7 +309,7 @@ class ImageTaskProcessor:
         if self.inpaint_worker:
             imgs = [self.inpaint_worker.post_process(x) for x in imgs]
         else:
-            logger.info("No inpaint worker available, skipping post-processing")
+            logger.debug("No inpaint worker available, skipping post-processing")
         return imgs
 
     # OK
@@ -463,9 +462,9 @@ class ImageTaskProcessor:
     def expand_prompts(self, tasks: List[config.TaskletObject]):
         """Expands the prompts for task."""
         for i, task in enumerate(tasks):
-            logger.info(f"Expanding prompt i + 1 ...")
+            logger.info(f"Expanding prompt {i + 1}...")
             expansion = self.pipeline.final_expansion(task.task_prompt, task.task_seed)
-            logger.info(f"[Prompt Expansion] {expansion}")
+            logger.debug(f"[Prompt Expansion] {expansion}")
             task.expansion = expansion
             task.positive_basic_workloads = copy.deepcopy(task.positive_basic_workloads) + [expansion]
         return tasks
@@ -496,11 +495,19 @@ class ImageTaskProcessor:
     def process_all_tasks(self):
         """Processes all tasks in the generation queue."""
         logger.info(f"Processing all tasks ...")
-        while len(self.generation_tasks) > 0:
-            task = self.generation_tasks.pop(0)
-            self.process_single_task(task)
-        logger.info(f"All tasks processed.")
+        while True:
+            try:
+                if len(self.generation_tasks) > 0:
+                    self.processing = True
+                    task = self.generation_tasks.pop(0)
+                    self.process_single_task(task)
+                else:
+                    time.sleep(1.0)
+                    pass
+            except Exception as e:
+                raise e
 
+            
 
     # OK
     def prepare_task_for_processing(self, task: config.ImageGenerationObject):
@@ -629,7 +636,6 @@ class ImageTaskProcessor:
         self.prepare_task_for_processing(task)
         task: config.ImageGenerationObject = self.generation_task 
         try:
-            self.processing = False
             for tasklet in self.tasks:
                 imgs, img_paths =  self.process_tasklet(tasklet)
                 logger.info(f"Tasklet processed.")
@@ -671,7 +677,7 @@ class ImageTaskProcessor:
     def stop_processing(self):
         """Stops the processing of the current task."""
         if self.processing:
-            self.interrupt_if_needed()
+            #self.interrupt_if_needed()
             self.cleanup_after_task()
             self.processing = False
 
@@ -961,7 +967,7 @@ class ImageTaskProcessor:
         if 'fast' in task.uov_method:
             direct_return = True
         elif image_is_super_large:
-            logger.info('Image is too large. Directly returned the SR image. '
+            logger.warning('Image is too large. Directly returned the SR image. '
                     'Usually directly return SR image at 4K resolution '
                     'yields better results than SDXL diffusion.')
             direct_return = True

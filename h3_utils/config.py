@@ -14,7 +14,7 @@ import random
 
 import numpy
 
-from h3_utils.flags import DESCRIBE_TYPE_PHOTO, ENHANCEMENT_UOV_PROMPT_TYPE_ORIGINAL, KSAMPLER, REFINER_SWAP_METHODS, SDXL_ASPECT_RATIOS, UPSCALE_OR_VARIATION_MODES, Overrides, Steps
+from h3_utils.flags import DESCRIBE_TYPE_PHOTO, ENHANCEMENT_UOV_PROMPT_TYPE_ORIGINAL, KSAMPLER, OUTPUTFORMAT_LIT, REFINER_SWAP_METHODS, SDXL_ASPECT_RATIOS, UPSCALE_OR_VARIATION_MODES, Overrides, Steps
 
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(PARENT_DIR)
@@ -71,7 +71,7 @@ class GlobalEnv:
 HOOOCUS_VERSION = '0.5.1'
 METADATA_SCHEME = "Hooocus"
 
-
+PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 class _LAUNCH_ARGS(BaseModel):
     # Modify the initial values here
@@ -92,11 +92,7 @@ class _LAUNCH_ARGS(BaseModel):
     rebuild_hash_cache: bool = Field(False, description="Generates missing model and LoRA hashes.")
     temp_path_cleanup_on_launch: bool = Field(True, description="The temp path cleanup on launch to use.")
     
-    # Server args
-    listen: str = "127.0.0.1"
-    port: int = 8188
-    disable_header_check: str = "false"
-    disable_server_info: bool = False
+
     
     # Etc
     web_upload_size: float = 100.0
@@ -152,12 +148,12 @@ class _LAUNCH_ARGS(BaseModel):
     attention_pytorch: bool = False
 
     # VramArgs
-    always_cpu: int = False
-    always_gpu: int = True
-    always_high_vram: int = True
-    always_normal_vram: int = False
-    always_low_vram: int = False
-    always_no_vram: int = False
+    always_cpu: bool = False
+    always_gpu: bool = True
+    always_high_vram: bool = True
+    always_normal_vram: bool = False
+    always_low_vram: bool = False
+    always_no_vram: bool = False
     always_offload_from_vram: bool = False
 
 
@@ -290,7 +286,7 @@ class _InitialImageGenerationParams(BaseModel):
     scheduler_name: str = DEFAULT_PRESET["scheduler"]
     
     base_model_name: str = Field(DEFAULT_PRESET["model"], description="The default model to use.", alias="model")
-    refiner_model: str = Field(DEFAULT_PRESET["refiner"], description="The default refiner model to use.", )
+    refiner_model: str | bool = Field(DEFAULT_PRESET["refiner"], description="The default refiner model to use.", )
     refiner_switch: float = Field(DEFAULT_PRESET["refiner_switch"], description="Refiner switch", ge=0.0, le=1.0)
     refiner_swap_method: REFINER_SWAP_METHODS = "joint"
     loras: list = Field(DEFAULT_PRESET["loras"], description="The default LoRAs to use.")
@@ -304,7 +300,7 @@ class _InitialImageGenerationParams(BaseModel):
     previous_default_models: List[str] = Field(DEFAULT_PRESET["previous_default_models"], description="The default previous default models to use.")
     
     # Format and save options
-    output_format: OutputFormat = Field("png", description="Output format")
+    output_format: OUTPUTFORMAT_LIT = Field(OutputFormat.WEBP, description="Output format")
     save_metadata_to_images: bool = Field(False, description="The default save metadata to images to use.")
     save_only_final_enhanced_image: bool = Field(False, description="The default save only final enhanced image to use.")
     aspect_ratio: SDXL_ASPECT_RATIOS = Field(DEFAULT_PRESET["aspect_ratio"], description="The default aspect ratio to use.")
