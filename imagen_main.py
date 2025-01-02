@@ -26,6 +26,9 @@ log = LoggingUtil(name="imagen_main.py").get_logger()
 
 DEBUG_IMAGEN = False
 
+if DEBUG_IMAGEN:
+    log.warning('Debug mode enabled in imagen_main.py.')
+
 OUTPUT_DIR = os.getenv('OUTPUT_DIR', 'outputs')
 
 
