@@ -110,6 +110,33 @@ class KSAMPLER(Enum):
     tcd = "TCD"
     restart = "Restart"
 
+
+KSAMPLER_NAMES_LIT = Literal[
+        "euler",
+        "euler_ancestral",
+        "heun",
+        "heunpp2",
+        "dpm_2",
+        "dpm_2_ancestral",
+        "lms",
+        "dpm_fast",
+        "dpm_adaptive",
+        "dpmpp_2s_ancestral",
+        "dpmpp_sde",
+        "dpmpp_sde_gpu",
+        "dpmpp_2m",
+        "dpmpp_2m_sde",
+        "dpmpp_2m_sde_gpu",
+        "dpmpp_3m_sde",
+        "dpmpp_3m_sde_gpu",
+        "ddpm",
+        "lcm",
+        "tcd",
+        "ddim",
+        "uni_pc",
+        "uni_pc_bh2",
+        "restart"]
+
 class EXTRA_KSAMPLER(Enum):
     ddim = "DDIM"
     uni_pc = "UniPC"
