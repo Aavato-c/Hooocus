@@ -306,17 +306,16 @@ class ImageTaskProcessor:
                         uid=uid
                     )
                 )
-                """  for _img in imgs:
-                _self.yields[uid].append(
-                    config.YieldObject(
-                        yield_type='result',
-                        progress=100,
-                        message=f'Image {id + 1}/{len(_self.tasks)} finished ...',
-                        #image=_img,
-                        url="https://google.com",
-                        uid=uid
+                for _img in imgs:
+                    _self.yields[uid].append(
+                        config.YieldObject(
+                            yield_type='result',
+                            progress=100,
+                            message=f'Image {id + 1}/{len(_self.tasks)} finished ...',
+                            image=_img,
+                            uid=uid
+                        )
                     )
-                ) """
             except Exception as e:
                 logger.error(f"Error saving image: {e}")
                 traceback.print_exc()
