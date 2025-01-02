@@ -31,7 +31,7 @@ from h3_utils.flags import EXAMPLE_ENHANCE_DETECTION_PROMPTS, INPAINT_MASK_CLOTH
 
 log = LoggingUtil().get_logger()
 
-preset_chosen: str = "Hoc_default" # Modify this to change the preset
+preset_chosen: str = "hoc_portrait" # Modify this to change the preset
 current_preset = {}
 
 try:
