@@ -1213,12 +1213,13 @@ def save_images(imgs: List[np.ndarray], output_format: str, filename_base: str =
 
     
     """
-    if "." in output_folder_path:
-        raise ValueError("Invalid output folder path. Did you mean to provide a folder name instead of a file path?")
+    if output_folder_path:
+        
+        if "." in output_folder_path:
+            raise ValueError("Invalid output folder path. Did you mean to provide a folder name instead of a file path?")
+        if not os.path.exists(output_folder_path):
+            os.makedirs(output_folder_path)
     
-    if not os.path.exists(output_folder_path):
-        os.makedirs(output_folder_path)
-
     paths = []
     n = 1
     for img in imgs:
