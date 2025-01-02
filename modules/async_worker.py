@@ -75,7 +75,7 @@ import ldm_patched.modules.model_management
 
 patch_all()
 SERVER_URL = os.environ.get("SERVER_URL", None)
-OUTPUT_DIR = os.environ.get("OUTPUT_DIR", None)
+OUTPUT_DIR = os.environ.get("IMAGE_OUTPUT_DIR", None)
 
 if SERVER_URL is None:
     log.error("SERVER_URL is not set.")
@@ -295,7 +295,8 @@ class ImageTaskProcessor:
         imgs = _self.post_process_images(imgs)
         # current_progress = int(self.current_progress + (100 - preparation_steps) / float(self.all_steps) * parent_task.steps)
         logger.debug(f"Saving image to system ...")
-        img_paths = save_images(imgs, "webp", output_folder_path=OUTPUT_DIR)
+        img_paths = save_images(imgs, "webp", filename_base=prepared_task.uid, output_folder_path=OUTPUT_DIR)
+        img_paths = [os.path.basename(x) for x in img_paths]
         logger.info(f"Image saved to system.")
         for imagepath in img_paths:
             logger.debug(f"Image path: {imagepath}")
