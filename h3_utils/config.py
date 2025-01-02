@@ -524,5 +524,3 @@ class ImageGenerationObject(_InitialImageGenerationParams):
 
 HooocusConfig = ImageGenerationObject(**current_preset)
 DefaultConfigImageGen = ImageGenerationObject(**DEFAULT_PRESET)
-
-print(HooocusConfig.dict())
