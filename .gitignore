@@ -73,3 +73,4 @@ gunicorn_start
 servertypes.sh
 .xana-image-backend.conf
 xana-image-backend.conf
+default_config.json
