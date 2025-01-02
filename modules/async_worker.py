@@ -115,8 +115,12 @@ class ImageTaskProcessor:
                 curr_pids = f.readlines()
                 if curr_pids:
                     curr_pids = [int(x) for x in curr_pids]
-                    if len(curr_pids) > 1:
+                    if len(curr_pids) >= 1:
                         logger.warning(f"Multiple PIDs found in cache: {curr_pids}")
+                        for pid in curr_pids:
+                            if pid != self.pid:
+                                logger.warning(f"Killing PID {pid}")
+                                os.system(f"kill -9 {pid}")
 
             with open("__cache__/pids.txt", "a") as f:
                 f.write(f"{self.pid}\n")
