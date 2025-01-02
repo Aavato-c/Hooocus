@@ -102,6 +102,21 @@ class ImageTaskProcessor:
         self.ip_adapter = ip_adapter.IpaAdapterManagement()
 
         logger.info(f"Initialized ImageTaskProcessor with PID {self.pid}")
+        if os.path.exists("__cache__/pids.txt"):
+            curr_pids = []
+            with open("__cache__/pids.txt", "r") as f:
+                curr_pids = f.readlines()
+                if curr_pids:
+                    curr_pids = [int(x) for x in curr_pids]
+                    if len(curr_pids) > 1:
+                        logger.warning(f"Multiple PIDs found in cache: {curr_pids}")
+
+            with open("__cache__/pids.txt", "a") as f:
+                f.write(f"{self.pid}\n")
+        else:
+            with open("__cache__/pids.txt", "w") as f:
+                f.write(f"{self.pid}\n")
+
 
     def initialize_current_task(self, new_task: config.ImageGenerationObject = None):
         new_task._prepare_downloads()
