@@ -8,7 +8,7 @@ import random
 import sys
 import threading
 import traceback
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 
 import PIL
@@ -63,6 +63,7 @@ from modules.imagen_utils.private_logger import log
 from modules.default_pipeline import DefaultPipeline
 from modules.core import apply_controlnet, apply_freeu, encode_vae, numpy_to_pytorch
 
+
 from unavoided_globals.unavoided_global_vars import (
     patch_settings_GLOBAL_CAUTION,
     opModelSamplingDiscrete,
@@ -73,6 +74,12 @@ from unavoided_globals.unavoided_global_vars import (
 import ldm_patched.modules.model_management
 
 patch_all()
+SERVER_URL = os.environ.get("SERVER_URL", None)
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", None)
+
+if SERVER_URL is None:
+    log.error("SERVER_URL is not set.")
+    exit(1)
 
 GlobalConfig = config.LAUNCH_ARGS
 
@@ -92,7 +99,7 @@ class ImageTaskProcessor:
         self.processing = False
         
         self.log_messages: list = []
-        self.yields: list = []
+        self.yields: Dict[str, List[config.YieldObject]] = {}
         self.current_progress: int = 1
         self.total_progress: int = 100
 
@@ -199,7 +206,7 @@ class ImageTaskProcessor:
         _self.final_scheduler_name = _self.patch_samplers()
         logger.debug(f"Final scheduler: {_self.final_scheduler_name}")
         
-        
+    
         processing_start_time = time.perf_counter()
         preparation_steps = _self.current_progress
         id = _self.tasks.index(prepared_task)
@@ -225,14 +232,26 @@ class ImageTaskProcessor:
                 #TODO REMOVE
                 pass
             if not is_finished:
-                _self.yields.append(['preview', (
-                    int(_self.current_progress + _self.callback_steps),
-                    f'Sampling step {step + 1}/{_self.all_steps}, image {id + 1}/{len(_self.tasks)} ...'), y, uid])
+                _self.yields[uid].append(
+                    config.YieldObject(
+                        yield_type='preview',
+                        progress=_self.current_progress + _self.callback_steps,
+                        message=f'Sampling step {step + 1}/{_self.all_steps}, image {id + 1}/{len(_self.tasks)} ...',
+                        image=y,
+                        uid=uid
+                    )
+                )
             
             elif is_finished:
-                _self.yields.append(['finish', (
-                    _self.current_progress + 100,
-                    f'Image {id + 1}/{len(_self.tasks)} finished ...'), y, uid])
+                _self.yields[uid].append(
+                    config.YieldObject(
+                        yield_type='result_in_callback',
+                        progress=100,
+                        message=f'Image {id + 1}/{len(_self.tasks)} finished ...',
+                        image=y,
+                        uid=uid
+                    )
+                )
                 
             else:
                 raise EarlyReturnException()
@@ -276,11 +295,37 @@ class ImageTaskProcessor:
         imgs = _self.post_process_images(imgs)
         # current_progress = int(self.current_progress + (100 - preparation_steps) / float(self.all_steps) * parent_task.steps)
         logger.debug(f"Saving image to system ...")
-        img_paths = save_images(imgs, "webp")
-        logger.debug(f"Image saved to system.")
-        for _img in imgs:
-            _self.yields.append(['result', (100, f'Image {id + 1}/{len(_self.tasks)} finished ...'), _img, uid])
-        # TODO: Log the image paths
+        img_paths = save_images(imgs, "webp", output_folder_path=OUTPUT_DIR)
+        logger.info(f"Image saved to system.")
+        for imagepath in img_paths:
+            logger.debug(f"Image path: {imagepath}")
+            try:
+                _self.yields[uid].append(
+                    config.YieldObject(
+                        yield_type='redirect_image',
+                        progress=100,
+                        message=f'Image {id + 1}/{len(_self.tasks)} finished ...',
+                        url=f"{SERVER_URL}/photo/{imagepath}",
+                        
+                        uid=uid
+                    )
+                )
+                """  for _img in imgs:
+                _self.yields[uid].append(
+                    config.YieldObject(
+                        yield_type='result',
+                        progress=100,
+                        message=f'Image {id + 1}/{len(_self.tasks)} finished ...',
+                        #image=_img,
+                        url="https://google.com",
+                        uid=uid
+                    )
+                ) """
+            except Exception as e:
+                logger.error(f"Error saving image: {e}")
+                traceback.print_exc()
+                raise e
+
         processing_time = time.perf_counter() - processing_start_time
         logger.warning(f"Processing time: {processing_time:.2f} seconds")
         
@@ -660,16 +705,27 @@ class ImageTaskProcessor:
         task: config.ImageGenerationObject = self.generation_task 
         try:
             for tasklet in self.tasks:
+                
+                if tasklet.uid in self.yields:
+                    raise Exception(f"Tasklet with UID {tasklet.uid} already exists in yields.")
+                
+                self.yields[tasklet.uid] = []
                 imgs, img_paths =  self.process_tasklet(tasklet)
                 logger.info(f"Tasklet processed.")
 
-            #self.generate_image_wall_if_needed(task)
-            self.yields.append(["finish", self.results, task.uid])
             self.pipeline.prepare_text_encoder(async_call=True)
         except Exception as e:
-            logger.info(f"Error processing task: {e}")
+            logger.info(f"Error processing task: {str(e)}")
             traceback.print_exc()
-            self.yields.append(["finish", self.results])
+            self.yields[task.uid].append(
+                config.YieldObject(
+                    yield_type='message',
+                    progress=100,
+                    message='Task finished ...',
+                    image=None,
+                    uid=task.uid
+                )
+            )
         finally:
             self.cleanup_after_task()
 
@@ -1149,13 +1205,13 @@ class ImageTaskProcessor:
 
 # UTILS
 
-def save_images(imgs: List[np.ndarray], output_format: str, output_folder_path: str = "outputs"):
+def save_images(imgs: List[np.ndarray], output_format: str, filename_base: str = None, output_folder_path: str = OUTPUT_DIR):
     """Saves images to disk
     
     Args:
         imgs (List[np.ndarray]): List of images to save
         output_format (str): Output format for the images
-        output_folder_path (str, optional): Output folder path. Defaults to "outputs".
+        output_folder_path (str, optional): Output folder path. Defaults to None.
 
     Returns:
         True (bool): True if the images were saved successfully
@@ -1169,9 +1225,15 @@ def save_images(imgs: List[np.ndarray], output_format: str, output_folder_path: 
         os.makedirs(output_folder_path)
 
     paths = []
+    n = 1
     for img in imgs:
-        save_path = os.path.join(output_folder_path, f"{get_filename_string()}.{output_format}")
+        filename_tail = f"_{n}.{output_format}" if len(imgs) > 1 else f".{output_format}"
+        if filename_base is None:
+            save_path = os.path.join(output_folder_path, f"{get_filename_string()}{filename_tail}")
+        else:
+            save_path = os.path.join(output_folder_path, f"{filename_base}{filename_tail}")
         paths.append(save_path)
+        logger.info(f"Saving image to {save_path} ...")
         PIL.Image.fromarray(img).save(save_path)
     
     return paths

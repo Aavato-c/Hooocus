@@ -2,6 +2,7 @@ import sys, os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+import dotenv
 import numpy
 from pydantic import BaseModel, Field
 
@@ -15,7 +16,7 @@ import tempfile
 from h3_utils.logging_util import LoggingUtil
 
 log = LoggingUtil().get_logger()
-
+dotenv.load_dotenv(override=True)
 
 random_style_name = 'Random Style'
 

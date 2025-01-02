@@ -3,25 +3,30 @@ from copy import deepcopy
 import datetime
 import io
 from operator import not_
+import os
 import random
 from uuid import uuid4
 import cv2
 from fastapi.responses import HTMLResponse
 from numpy import ndarray
-from regex import F
+from regex import E, F
+from torch import seed
 from h3_utils.flags import Performance
 from h3_utils.launch.launch import prepare_environment
+from modules.async_worker import ImageTaskProcessor
 prepare_environment()
 
 from PIL import Image, ImageDraw, ImageFont
 from h3_utils.logging_util import LoggingUtil
 import time
-from h3_utils.config import LAUNCH_ARGS, OverWriteControls
+from h3_utils.config import LAUNCH_ARGS, ImageGenerationObject, OverWriteControls, YieldObject
 from h3_utils.img_processor_globlal import imgProcessor, BatchTemplates
 
 log = LoggingUtil(name="imagen_main.py").get_logger()
 
 DEBUG_IMAGEN = False
+
+OUTPUT_DIR = os.getenv('OUTPUT_DIR', 'outputs')
 
 
 
@@ -37,7 +42,7 @@ def _generate_image_with_text(prompt: str) -> bool:
 
     # Convert to byte array
     img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format='PNG')
+    img.save(img_byte_arr, format='WEBP')
     img_byte_arr = img_byte_arr.getvalue()
     return img_byte_arr
 
@@ -50,8 +55,9 @@ not_ready_arr_3 = _generate_image_with_text('Waiting to start...')
 notreadys = [not_ready_arr_1, not_ready_arr_2, not_ready_arr_3]
 
 
-def generate_image_to_stream(prompt: str):
+def generate_image_to_stream_using_prompt(prompt: str):
     # https://stackoverflow.com/questions/65971081/streaming-video-from-camera-in-fastapi-results-in-frozen-image-after-first-frame
+    # About multi part: https://en.wikipedia.org/wiki/MIME#Multipart_messages
     unique_id = uuid4().hex
     newtask = deepcopy(BatchTemplates.normal)
     newtask.seed = random.randint(LAUNCH_ARGS.min_seed, LAUNCH_ARGS.max_seed)
@@ -76,46 +82,125 @@ def generate_image_to_stream(prompt: str):
         time.sleep(1.0)
         if len(imgProcessor.yields) > 0:
             try:
-                img_res = imgProcessor.yields.pop(0)
+                img_res = imgProcessor.yields[unique_id].pop(0)
             except Exception as e:
-                log.error(str(e))
+                log.error(f"Couldn't subscribe to image processing. {str(e)}")
                 time.sleep(0.05)
-            if img_res[0] == "preview" and img_res[-1] == unique_id:
-                rgb_image = cv2.cvtColor(img_res[2], cv2.COLOR_BGR2RGB)
-                (flag, encodedImage) = cv2.imencode(".png", rgb_image)
+                continue
+            img_res: YieldObject
+            if img_res.yield_type == "preview" and img_res.uid == unique_id:
+                rgb_image = cv2.cvtColor(img_res.image, cv2.COLOR_BGR2RGB)
+                (flag, encodedImage) = cv2.imencode(".webp", rgb_image)
                 if not flag:
                     continue
                 else:
                     log.debug('Image preview generated.')
                     if not DEBUG_IMAGEN:
-                        yield (b'--frame\r\n' b'Content-Type: image/png\r\n\r\n' + bytearray(encodedImage) + b'\r\n')
+                        yield (b'--frame\r\n' b'Content-Type: image/webp\r\n\r\n' + bytearray(encodedImage) + b'\r\n')
+                        # yield (b'--frame\r\n' b'Content-Type: text/html\r\n\r\n' + img_res.url + b'\r\n' + b'--frame--\r\n')
+                        # finished = True
                     else:
                         yield f"Image preview generated: {max_loops}"
-            elif img_res[0] == "result" and img_res[-1] == unique_id:
-                rgb_image = cv2.cvtColor(img_res[2], cv2.COLOR_BGR2RGB)
-                (flag, encodedImage) = cv2.imencode(".png", rgb_image)
+                
+                """     elif img_res.yield_type == "result" and img_res.uid == unique_id:
+                rgb_image = cv2.cvtColor(img_res.image, cv2.COLOR_BGR2RGB)
+                (flag, encodedImage) = cv2.imencode(".webp", rgb_image)
                 if not flag:
                     raise Exception('Error encoding image.')
                 else:
                     log.debug('Image result generated.')
                     finished = True
                     if not DEBUG_IMAGEN:
-                        yield (b'--frame\r\n' b'Content-Type: image/png\r\n\r\n' + bytearray(encodedImage) + b'\r\n')
+                        yield (b'--frame\r\n' b'Content-Type: image/webp\r\n\r\n' + bytearray(encodedImage) + b'\r\n' + b'--frame--\r\n')
                     else:
-                        pass
+                        pass """
+
+            elif img_res.yield_type == "redirect_url" and img_res.uid == unique_id:
+                log.debug('Redirecting to URL.')
+                log.info(f"URL for a ready img: {img_res.url}")
+                finished = True
+                yield (b'--frame\r\n' b'Content-Type: text/html\r\n\r\n' + img_res.url + b'\r\n' + b'--frame--\r\n')
 
             else:
-                if img_res[-1] == unique_id:
+                if img_res.uid == unique_id:
                     log.debug('Image not ready.')
+                    log.info(f"Image not ready. {img_res}")
                 else:
                     notready_iter += 1
                     photo_chosen = notreadys[notready_iter % 3]
-                    yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + photo_chosen + b'\r\n')
+                    yield (b'--frame\r\n' b'Content-Type: image/webp\r\n\r\n' + photo_chosen + b'\r\n')
 
-def get_filename_from_image() -> str:
-    dt_string = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    return f"outputs/{dt_string}.jpeg"
-                
+
+def generate_image_to_stream(seed_generation_task: ImageGenerationObject):
+    unique_id = uuid4().hex
+    
+    try:
+        newtask = ImageGenerationObject.model_validate(seed_generation_task)
+    except Exception as e:
+        log.error(str(e))
+        raise Exception('Error validating request.')
+    
+    newtask.seed = random.randint(LAUNCH_ARGS.min_seed, LAUNCH_ARGS.max_seed)
+    newtask.uid = unique_id
+    imgProcessor.generation_tasks.append(newtask)
+    
+    finished = False
+    notready_iter = 0
+    max_loops = 1000
+    while not finished:
+        max_loops -= 1
+        if max_loops <= 0:
+            raise Exception('Max loops reached.')
+        time.sleep(0.49)
+        if unique_id in imgProcessor.yields:
+            if len(imgProcessor.yields[unique_id]) > 0:
+                try:
+                    img_res = imgProcessor.yields[unique_id].pop(0)
+                except Exception as e:
+                    time.sleep(0.05)
+                    continue
+                img_res: YieldObject
+                if img_res.yield_type == "preview" and img_res.uid == unique_id:
+                    rgb_image = cv2.cvtColor(img_res.image, cv2.COLOR_BGR2RGB)
+                    (flag, encodedImage) = cv2.imencode(".webp", rgb_image)
+                    if not flag:
+                        continue
+                    else:
+                        log.debug('Image preview generated.')
+                        if not DEBUG_IMAGEN:
+                            yield (b'--frame\r\n' b'Content-Type: image/webp\r\n\r\n' + bytearray(encodedImage) + b'\r\n')
+                        else:
+                            yield f"Image preview generated: {max_loops}"
+                elif img_res.yield_type == "result" and img_res.uid == unique_id:
+                    rgb_image = cv2.cvtColor(img_res.image, cv2.COLOR_BGR2RGB)
+                    (flag, encodedImage) = cv2.imencode(".webp", rgb_image)
+                    if not flag:
+                        raise Exception('Error encoding image.')
+                    else:
+                        log.debug('Image result generated.')
+                        finished = True
+                        if not DEBUG_IMAGEN:
+                            yield (b'--frame\r\n' b'Content-Type: image/webp\r\n\r\n' + bytearray(encodedImage) + b'\r\n' + b'--frame--\r\n')
+                        else:
+                            pass
+
+                elif img_res.yield_type == "redirect_url" and img_res.uid == unique_id:
+                    log.debug('Redirecting to URL.')
+                    finished = True
+                    yield (b'--frame\r\n' b'Content-Type: text/html\r\n\r\n' + img_res.url + b'\r\n' + b'--frame--\r\n')
+
+                else:
+                    if img_res[-1] == unique_id:
+                        log.debug('Image not ready.')
+                    else:
+                        notready_iter += 1
+                        photo_chosen = notreadys[notready_iter % 3]
+                        yield (b'--frame\r\n' b'Content-Type: image/webp\r\n\r\n' + photo_chosen + b'\r\n')
+        else:
+            log.debug('Image processing not started.')
+            notready_iter += 1
+            photo_chosen = notreadys[notready_iter % 3]
+            yield (b'--frame\r\n' b'Content-Type: image/webp\r\n\r\n' + photo_chosen + b'\r\n')
 
 def generate_image(prompt: str) -> bool:
     # https://stackoverflow.com/questions/65971081/streaming-video-from-camera-in-fastapi-results-in-frozen-image-after-first-frame

@@ -406,6 +406,21 @@ class ApplyImageInputParams(BaseModel):
     skip_prompt_processing: bool
     use_synthetic_refiner: bool
 
+
+yield_types = Literal['preview', 'result', 'result_in_callback', 'message', 'image', 'finish', 'redirect_image']
+
+class YieldObject(BaseModel):
+    class Config:
+        validate_assignment = True
+        arbitrary_types_allowed = True
+
+    yield_type: yield_types
+    progress: float
+    message: str
+    image: Optional[numpy.ndarray] = None
+    uid: str
+    url: Optional[str] = None
+
 class ImageGenerationObject(_InitialImageGenerationParams):
     
     class Config:
