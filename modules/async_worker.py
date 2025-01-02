@@ -216,16 +216,7 @@ class ImageTaskProcessor:
         id = _self.tasks.index(prepared_task)
         uid = prepared_task.uid
 
-        """
-        def callback(step, x0, x, total_steps):
-        global_model_management.throw_exception_if_processing_interrupted()
-        y = None
-        if previewer is not None and not disable_preview:
-            y = previewer(x0, previewer_start + step, previewer_end)
-        if callback_function is not None:
-            callback_function(previewer_start + step, x0, x, previewer_end, y)
-        
-        """
+
         def _callback(step, x0, x, total_steps, y, preview_yelder=_self.preview_yelder):
             if step == 0:
                 _self.callback_steps = 0
