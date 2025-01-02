@@ -240,7 +240,7 @@ class ImageTaskProcessor:
             elif is_finished:
                 _self.yields[uid].append(
                     config.YieldObject(
-                        yield_type='result_in_callback',
+                        yield_type='preview',
                         progress=100,
                         message=f'Image {id + 1}/{len(_self.tasks)} finished ...',
                         image=y,
