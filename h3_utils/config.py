@@ -14,17 +14,18 @@ import random
 
 import numpy
 
-from h3_utils.flags import DESCRIBE_TYPE_PHOTO, ENHANCEMENT_UOV_PROMPT_TYPE_ORIGINAL, KSAMPLER, OUTPUTFORMAT_LIT, REFINER_SWAP_METHODS, SDXL_ASPECT_RATIOS, UPSCALE_OR_VARIATION_MODES, Overrides, Steps
+from h3_utils.flags import DESCRIBE_TYPE_PHOTO, ENHANCEMENT_UOV_PROMPT_TYPE_ORIGINAL, KSAMPLER, KSAMPLER_NAMES, KSAMPLER_NAMES_LIT, OUTPUTFORMAT_LIT, REFINER_SWAP_METHODS, SDXL_ASPECT_RATIOS, UPSCALE_OR_VARIATION_MODES, Overrides, Steps
 
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(PARENT_DIR)
 
 import json
 import tempfile
-from typing import Any, Dict, List, Literal, Optional, Tuple, Iterable
+from typing import Any, Dict, List, Literal, Optional, Tuple, Iterable, TypeAlias, Union
 from enum import Enum
 from h3_utils.model_file_config import BaseControlNetTask
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from numpy.typing import NDArray
 
 from h3_utils.logging_util import LoggingUtil
 from h3_utils.flags import EXAMPLE_ENHANCE_DETECTION_PROMPTS, INPAINT_MASK_CLOTH_CATEGORY, INPUT_IMAGE_MODES, KSAMPLER, OUTPAINT_SELECTIONS, REFINER_SWAP_METHODS, SDXL_ASPECT_RATIOS, UPSCALE_OR_VARIATION_MODES, LatentPreviewMethod, OutputFormat, Performance, ENHANCEMENT_UOV_AFTER, ENHANCEMENT_UOV_BEFORE, ENHANCEMENT_UOV_PROCESSING_ORDER
@@ -33,6 +34,8 @@ log = LoggingUtil().get_logger()
 
 preset_chosen: str = "hoc_portrait" # Modify this to change the preset
 current_preset = {}
+
+CustomNDArrayType: TypeAlias = Union[NDArray, List[NDArray]]
 
 try:
     with open(f"{PARENT_DIR}/presets/default.json", "r") as f:
@@ -173,12 +176,18 @@ class FilePathConfig:
 
 
 class FreeUControls(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
     freeu_b1: float = Field(1.01, le=2.0, ge=0.0)
     freeu_b2: float = Field(1.02, le=2.0, ge=0.0)
     freeu_s1: float = Field(0.99, le=2.0, ge=0.0)
     freeu_s2: float = Field(0.95, le=2.0, ge=0.0)
 
 class OverWriteControls(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
     overwrite_height: int = -1
     overwrite_step: int = -1
     overwrite_switch: int = -1
@@ -188,6 +197,9 @@ class OverWriteControls(BaseModel):
     overwrite_width: int = -1
 
 class DeveloperOptions(BaseModel):
+
+    class Config:
+        arbitrary_types_allowed = True
      # ?
     metadata_created_by: str = Field("", description="The metadata created by to use.")
     metadata_scheme: str = Field(METADATA_SCHEME, description="The default metadata scheme to use.")
@@ -282,7 +294,7 @@ class _InitialImageGenerationParams(BaseModel):
     
     sample_sharpness: float = Field(DEFAULT_PRESET["sample_sharpness"], description="The default sample sharpness to use.", ge=0.0, le=30.0)
     seed: int = random.randint(LAUNCH_ARGS.min_seed, LAUNCH_ARGS.max_seed)
-    sampler_name: KSAMPLER = DEFAULT_PRESET["sampler"]
+    sampler_name: KSAMPLER_NAMES_LIT = DEFAULT_PRESET["sampler"]
     scheduler_name: str = DEFAULT_PRESET["scheduler"]
     
     base_model_name: str = Field(DEFAULT_PRESET["model"], description="The default model to use.", alias="model")
@@ -350,14 +362,15 @@ class _InitialImageGenerationParams(BaseModel):
 
     image_input_mode: INPUT_IMAGE_MODES = Field("uov", description="The image input mode to use.") # utils.flags.input_image_tab_ids 
     
-    input_image: Optional[Dict[Literal["image", "mask"], numpy.ndarray]] = None
-    uov_input_image: Optional[numpy.ndarray] = None
-    input_mask_image: Optional[Dict[Literal["image", "mask"], numpy.ndarray]] = None
-    prepared_input_mask_image: Optional[numpy.ndarray] = None
-    enhance_input_image: Optional[numpy.ndarray] = None
+    input_image: Optional[Dict[Literal["image", "mask"], CustomNDArrayType]] = None
+    uov_input_image: Optional[CustomNDArrayType] = None
+    input_mask_image: Optional[Dict[Literal["image", "mask"], CustomNDArrayType]] = None
+    prepared_input_mask_image: Optional[CustomNDArrayType] = None
+    enhance_input_image: Optional[CustomNDArrayType] = None
     
     uov_method: Optional[UPSCALE_OR_VARIATION_MODES] = Field(None, description="The default uov method to use.")
     steps_uov: int = -1
+
     
 
 
