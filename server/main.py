@@ -1,11 +1,12 @@
 import json
 import os
 import sys
-
-from h3_utils.config import ImageGenerationObject
+from uuid import uuid4
 
 ROOT_DIR = os.path.abspath(__file__).split("server")[0]
 sys.path.append(ROOT_DIR)
+from h3_utils.config import ImageGenerationObject
+
 
 from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -42,21 +43,30 @@ def serve_photo(filename: str, extension: str):
 
 @app.get("/getphoto/{prompt}.webp")
 def get_photo_prompt(prompt: str):
+    new_id = uuid4().hex
     try:
         prompt = prompt.replace("_", " ")
     except Exception as e:
         return JSONResponse(content=str(e), status_code=500)
     # We'll generate a lot of <img> tags
-    return StreamingResponse(generate_image_to_stream_using_prompt(prompt), media_type="multipart/x-mixed-replace; boundary=frame")
+    return StreamingResponse(generate_image_to_stream_using_prompt(prompt, unique_id=new_id), media_type="multipart/x-mixed-replace; boundary=frame")
 
 @app.post("/getphoto")
-def get_photo_genobject(request: ImageGenerationObject):
+def get_photo_genobject(request: dict):
     try:
-        prompt = request.prompt    
+        new_id = uuid4().hex
+        request_validated = ImageGenerationObject.model_validate(request)
+        prompt = request_validated.prompt
+        # Todo handle input image urls here
     except Exception as e:
         return JSONResponse(content=str(e), status_code=500)
     # We'll generate a lot of <img> tags
-    return StreamingResponse(generate_image_to_stream(request), media_type="multipart/x-mixed-replace; boundary=frame")
+    try:
+        return StreamingResponse(generate_image_to_stream(request_validated, new_id), media_type="multipart/x-mixed-replace; boundary=frame")
+    except Exception as e:
+        return JSONResponse(content=str(e), status_code=500)
+    finally:
+        pass
 
 
 
