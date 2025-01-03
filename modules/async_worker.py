@@ -89,12 +89,15 @@ class EarlyReturnException(BaseException):
     pass
 
 class ImageTaskProcessor:
-    def __init__(self):
+    def __init__(self, global_uuid: str = None, max_processes: int = 1):
+        self.global_uuid = global_uuid
+        self.max_processes = max_processes
         self.initialize_processor()
         self.preview_yelder = None
 
     def initialize_processor(self):
         self.pid = os.getpid()
+        self.process_identifier = f"{self.pid}:{self.global_uuid}"
         self.pipeline = DefaultPipeline()
         self.processing = False
         
@@ -108,25 +111,58 @@ class ImageTaskProcessor:
 
         self.ip_adapter = ip_adapter.IpaAdapterManagement()
 
+        # GLOBAL VAR USAGE START
         logger.info(f"Initialized ImageTaskProcessor with PID {self.pid}")
+
         if os.path.exists("__cache__/pids.txt"):
             curr_pids = []
             with open("__cache__/pids.txt", "r") as f:
                 curr_pids = f.readlines()
                 if curr_pids:
-                    curr_pids = [int(x) for x in curr_pids]
-                    if len(curr_pids) >= 1:
+                    curr_pid_pairs = [x.replace("\n", "") for x in curr_pids]
+                    curr_pid_pairs = [x.split(":") for x in curr_pid_pairs]
+                    pids = [int(x[0]) for x in curr_pid_pairs]
+                    idents = [x[1] for x in curr_pid_pairs]
+                    if self.pid in pids:
+                        logger.warning(f"PID {self.pid} already in cache. This shouldn't happen.")
+                        raise Exception(f"PID {self.pid} already in cache. This shouldn't happen.")
+                    
+                    if self.process_identifier in idents:
+                        logger.warning(f"Process identifier {self.process_identifier} already in cache. This shouldn't happen.")
+                        raise Exception(f"Process identifier {self.process_identifier} already in cache. This shouldn't happen.")
+                    
+                    if len(curr_pid_pairs) >= self.max_processes:
                         logger.warning(f"Multiple PIDs found in cache: {curr_pids}")
-                        for pid in curr_pids:
+                        processes_killed = []
+                        for pidpair in curr_pid_pairs[:self.max_processes-1]:
+                            if len(pidpair) != 2:
+                                logger.warning(f"Invalid PID pair: {pidpair}")
+                                raise Exception(f"Invalid PID pair: {pidpair}")
+                            pid = int(pidpair[0])
                             if pid != self.pid:
                                 logger.warning(f"Killing PID {pid}")
                                 os.system(f"kill -9 {pid}")
+                                processes_killed.append(pidpair)
+                            else:
+                                logger.warning(f"PID {pid} is the current PID. Unhandled.")
+                        if len(processes_killed) > 0:
+                            logger.warning(f"Killed processes: {processes_killed}")
+                            for killed in processes_killed:
+                                curr_pids.remove(f"{killed[0]}:{killed[1]}")
+                            with open("__cache__/pids.txt", "w") as f:
+                                curr_pids = [f"{x[0]}:{x[1]}" for x in curr_pid_pairs]
+                                f.write("\n".join(curr_pids))
+                                
+                        else:
+                            logger.warning(f"No processes killed.")
+
 
             with open("__cache__/pids.txt", "a") as f:
-                f.write(f"{self.pid}\n")
+                f.write(f"{self.process_identifier}\n")
         else:
             with open("__cache__/pids.txt", "w") as f:
-                f.write(f"{self.pid}\n")
+                f.write(f"{self.process_identifier}\n")
+        # GLOBAL VAR USAGE END
 
 
     def initialize_current_task(self, new_task: config.ImageGenerationObject = None):
