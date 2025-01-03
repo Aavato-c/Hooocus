@@ -530,6 +530,11 @@ class ImageGenerationObject(_InitialImageGenerationParams):
 HooocusConfig = ImageGenerationObject(**current_preset)
 DefaultConfigImageGen = ImageGenerationObject(**DEFAULT_PRESET)
 
+class BatchTemplates:
+    HooocusConfig.performance_selection = Performance.LIGHTNING
+    normal = HooocusConfig
+    
+
 """ 
 with open("hoocus_config.json", "w") as f:
 
