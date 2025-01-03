@@ -74,7 +74,9 @@ def generate_image_to_stream_using_prompt(prompt: str, unique_id: str):
     newtask.prompt = prompt
     newtask.sample_sharpness = 8.5
     log.info(f"Using seed: {newtask.seed}\nadaptive_cfg: {newtask.adaptive_cfg}\ncfg_scale: {newtask.cfg_scale}\nprompt: {newtask.prompt}\nsample_sharpness: {newtask.sample_sharpness}")
-
+    normal_template = BatchTemplates.normal
+    final_task = normal_template.model_copy(update=newtask)
+    imgProcessor.generation_tasks.append(final_task)
     
     finished = False
     notready_iter = 0
