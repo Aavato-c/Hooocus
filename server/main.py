@@ -76,9 +76,25 @@ def get_photo_genobject(request: dict):
 
 
 
-def main_entry():
-    uvicorn.run(app)
-    pass
+def main_entry(process_uuid = None, max_processes = 1):
+    if process_uuid == None:
+        log.error("No entry value provided.")
+        sys.exit(1)
+    else:
+        shared.GLOBAL_GUNICORN_ID = process_uuid
+        shared.MAX_PROCESSES = max_processes
+        img_processor_globlal.create_image_processor()
+        return app
+
+
+
+
+
+    
+
+    
+
 
 if __name__ == "__main__":
-    main_entry()
+    app = main_entry("RANDOM_UUID")
+    uvicorn.run(app)
