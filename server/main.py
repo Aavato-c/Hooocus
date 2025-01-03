@@ -6,6 +6,7 @@ from uuid import uuid4
 ROOT_DIR = os.path.abspath(__file__).split("server")[0]
 sys.path.append(ROOT_DIR)
 from h3_utils.config import ImageGenerationObject
+from unavoided_globals import img_processor_globlal
 
 
 from fastapi import FastAPI, Response
@@ -13,9 +14,14 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from imagen_main import generate_image_to_stream, generate_image_to_stream_using_prompt
 import uvicorn
 from h3_utils.logging_util import LoggingUtil
+import unavoided_globals.shared as shared
 
 log = LoggingUtil(name="main.py").get_logger()
 
+ags = sys.argv
+if len(ags) > 1:
+    GUNICORN_ID = ags[1]
+    
 app = FastAPI()
 
 SERVER_URL = os.environ.get("SERVER_URL", None)

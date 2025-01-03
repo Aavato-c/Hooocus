@@ -20,8 +20,7 @@ prepare_environment()
 from PIL import Image, ImageDraw, ImageFont
 from h3_utils.logging_util import LoggingUtil
 import time
-from h3_utils.config import LAUNCH_ARGS, ImageGenerationObject, OverWriteControls, YieldObject
-from h3_utils.img_processor_globlal import imgProcessor, BatchTemplates
+from h3_utils.config import LAUNCH_ARGS, BatchTemplates, ImageGenerationObject, OverWriteControls, YieldObject
 
 log = LoggingUtil(name="imagen_main.py").get_logger()
 
@@ -62,6 +61,10 @@ notreadys = [not_ready_arr_1, not_ready_arr_2, not_ready_arr_3]
 def generate_image_to_stream_using_prompt(prompt: str, unique_id: str):
     # https://stackoverflow.com/questions/65971081/streaming-video-from-camera-in-fastapi-results-in-frozen-image-after-first-frame
     # About multi part: https://en.wikipedia.org/wiki/MIME#Multipart_messages
+    from unavoided_globals.shared import IMAGE_PROCESSOR as imgProcessor
+    if not imgProcessor:
+        log.error('No image processor.')
+        raise Exception('No image processor.')
     newtask = deepcopy(BatchTemplates.normal)
     newtask.seed = random.randint(LAUNCH_ARGS.min_seed, LAUNCH_ARGS.max_seed)
     newtask.uid = unique_id
@@ -72,8 +75,6 @@ def generate_image_to_stream_using_prompt(prompt: str, unique_id: str):
     newtask.sample_sharpness = 8.5
     log.info(f"Using seed: {newtask.seed}\nadaptive_cfg: {newtask.adaptive_cfg}\ncfg_scale: {newtask.cfg_scale}\nprompt: {newtask.prompt}\nsample_sharpness: {newtask.sample_sharpness}")
 
-
-    imgProcessor.generation_tasks.append(newtask)
     
     finished = False
     notready_iter = 0
