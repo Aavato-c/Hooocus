@@ -529,3 +529,8 @@ class ImageGenerationObject(_InitialImageGenerationParams):
 
 HooocusConfig = ImageGenerationObject(**current_preset)
 DefaultConfigImageGen = ImageGenerationObject(**DEFAULT_PRESET)
+
+""" 
+with open("hoocus_config.json", "w") as f:
+
+    f.write(HooocusConfig.model_dump_json()) """
