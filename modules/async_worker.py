@@ -588,6 +588,12 @@ class ImageTaskProcessor:
     def process_all_tasks(self):
         """Processes all tasks in the generation queue."""
         logger.info(f"Processing all tasks ...")
+        current_pid = os.getpid()
+        if current_pid != self.pid:
+            logger.error(f"Process ID mismatch: {current_pid} != {self.pid}")
+            sys.exit(1)
+        else:
+            logger.info(f"Process ID match: {current_pid} == {self.pid}")
         while True:
             try:
                 if len(self.generation_tasks) > 0:
