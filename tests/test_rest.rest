@@ -5,7 +5,7 @@ Access-Control-Allow-Origin: *
 {
     "uid": "",
     "has_been_processed": false,
-    "prompt_negative": "",
+    "negative_prompt": "",
     "prompt": "",
     "negative_prompt": "",
     "read_wildcards_in_order": false,
