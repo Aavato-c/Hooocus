@@ -379,7 +379,7 @@ class TaskletObject(BaseModel):
     """
     class Config:
         arbitrary_types_allowed = True
-        orm_mode = True
+        from_attributes = True
 
 
     uid: str
@@ -431,7 +431,7 @@ class ImageGenerationObject(_InitialImageGenerationParams):
     
     class Config:
         arbitrary_types_allowed = True
-        orm_mode = True
+        from_attributes = True
 
 
 
