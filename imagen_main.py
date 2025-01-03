@@ -149,6 +149,8 @@ def generate_image_to_stream_using_prompt(prompt: str, unique_id: str):
 def generate_image_to_stream(seed_generation_task: ImageGenerationObject, unique_id: str):
     # https://stackoverflow.com/questions/65971081/streaming-video-from-camera-in-fastapi-results-in-frozen-image-after-first-frame
     # About multi part: https://en.wikipedia.org/wiki/MIME#Multipart_messages
+    normal_template = BatchTemplates.normal
+    
     newtask = seed_generation_task
     newtask.seed = random.randint(LAUNCH_ARGS.min_seed, LAUNCH_ARGS.max_seed)
     newtask.uid = unique_id
@@ -156,7 +158,8 @@ def generate_image_to_stream(seed_generation_task: ImageGenerationObject, unique
     newtask.cfg_scale = 2.0
     #newtask.overwrite_controls = OverWriteControls(overwrite_step=12)
     newtask.sample_sharpness = 8.5
-    imgProcessor.generation_tasks.append(newtask)    
+    final_task = normal_template.model_copy(update=newtask)
+    imgProcessor.generation_tasks.append(final_task)
     finished = False
     notready_iter = 0
     max_waits = 100
