@@ -277,9 +277,8 @@ class _InitialImageGenerationParams(BaseModel):
     uid: str = Field("", description="The default uid to use.")
     has_been_processed: bool = False
     
-    prompt_negative: str = Field(DEFAULT_PRESET["prompt_negative"], description="The default negative prompt to use.")
+    negative_prompt: str = Field(DEFAULT_PRESET["negative_prompt"], description="The default negative prompt to use.")
     prompt: Optional[str] = Field(None, description="The default prompt to use.")
-    negative_prompt: str = ""
     read_wildcards_in_order: bool = False
 
     width: Optional[int] = Field(None, description="The default width to use.")
