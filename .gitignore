@@ -76,3 +76,5 @@ xana-image-backend.conf
 default_config.json
 __cache__/pids.txt
 hoocus_config.json
+gunicorn_start.sh
+hoocus_server.conf
