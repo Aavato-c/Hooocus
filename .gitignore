@@ -75,3 +75,4 @@ servertypes.sh
 xana-image-backend.conf
 default_config.json
 __cache__/pids.txt
+hoocus_config.json
