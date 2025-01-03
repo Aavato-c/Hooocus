@@ -78,3 +78,4 @@ __cache__/pids.txt
 hoocus_config.json
 gunicorn_start.sh
 hoocus_server.conf
+server/nginx_conf_template
