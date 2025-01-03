@@ -168,13 +168,6 @@ class FilePathConfig:
     hash_cache_path = f'{PARENT_DIR}/__cache__/hash_cache.json'
     auth_filename = 'auth.json'
 
-
-
-
-
-
-
-
 class FreeUControls(BaseModel):
     class Config:
         arbitrary_types_allowed = True
