@@ -35,7 +35,7 @@
     "scheduler": "karras",
     "performance": "Extreme Speed",
     "prompt": "",
-    "prompt_negative": "",
+    "negative_prompt": "",
     "styles": [
         "Fooocus V2",
         "Fooocus Enhance",

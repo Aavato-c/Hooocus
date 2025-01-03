@@ -35,7 +35,7 @@
     "scheduler": "karras",
     "performance": "Speed",
     "prompt": "",
-    "prompt_negative": "unrealistic, saturated, high contrast, big nose, painting, drawing, sketch, cartoon, anime, manga, render, CG, 3d, watermark, signature, label",
+    "negative_prompt": "unrealistic, saturated, high contrast, big nose, painting, drawing, sketch, cartoon, anime, manga, render, CG, 3d, watermark, signature, label",
     "styles": [
         "Fooocus V2",
         "Fooocus Photograph",

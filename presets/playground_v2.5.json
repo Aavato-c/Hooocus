@@ -35,7 +35,7 @@
     "scheduler": "edm_playground_v2.5",
     "performance": "Speed",
     "prompt": "",
-    "prompt_negative": "",
+    "negative_prompt": "",
     "styles": [
         "Fooocus V2"
     ],
