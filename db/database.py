@@ -45,3 +45,12 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def get_db_unmanaged():
+    if consts.TESTING == True:
+        engine_test = create_engine(DB_URL_TEST, connect_args={"check_same_thread": False})
+        SessionLocalTesting = sessionmaker(autocommit=False, autoflush=False, bind=engine_test)
+        db = SessionLocalTesting()
+    else:
+        db = SessionLocal()
+    return db
