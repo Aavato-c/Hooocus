@@ -78,10 +78,6 @@ patch_all()
 
 OUTPUT_DIR = FolderPathsConfig.path_outputs
 
-if SERVER_URL is None:
-    log.error("SERVER_URL is not set.")
-    exit(1)
-
 GlobalConfig = config.LAUNCH_ARGS
 
 logger = LoggingUtil(name="ImageTaskProcessor").get_logger()
