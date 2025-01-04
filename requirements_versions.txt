@@ -29,3 +29,4 @@ pydantic==2.9.2
 
 # Server
 gunicorn==23.0.0
+SQLAlchemy==2.0.36

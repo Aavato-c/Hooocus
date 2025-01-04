@@ -2,21 +2,27 @@
 import os
 import sys
 from uuid import uuid4
-
+import uvicorn
 ROOT_DIR = os.path.abspath(__file__).split("server")[0]
 sys.path.append(ROOT_DIR)
-from h3_utils.config import ImageGenerationObject
-from unavoided_globals import img_processor_globlal
 
+from sqlalchemy.orm import Session
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, Depends
 from fastapi.responses import JSONResponse, StreamingResponse
+
+from db.database import get_db
+from db.utils import get_timestamp, get_uuid
+
 from imagen_main import generate_image_to_stream, generate_image_to_stream_using_prompt
-import uvicorn
+
 from h3_utils.logging_util import LoggingUtil
-import unavoided_globals.shared as shared
+from h3_utils.config import ImageGenerationObject
+
+from unavoided_globals import img_processor_globlal, shared
 
 log = LoggingUtil(name="main.py").get_logger()
+
 
 ags = sys.argv
 if len(ags) > 1:
@@ -34,8 +40,8 @@ if SERVER_URL is None:
 def read_root():
     return JSONResponse(content="Hello World", status_code=200)
 
-@app.get("/photo/{filename}.{extension}")
-def serve_photo(filename: str, extension: str):
+@app.get("/{filename}.{extension}")
+def serve_photo(filename: str, extension: str, db: Session = Depends(get_db)):
     try:
         if os.path.exists(f"outputs/{filename}.{extension}") is False:
             return JSONResponse(content="File not found.", status_code=404)
