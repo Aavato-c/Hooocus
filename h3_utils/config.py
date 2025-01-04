@@ -32,7 +32,7 @@ from h3_utils.flags import EXAMPLE_ENHANCE_DETECTION_PROMPTS, INPAINT_MASK_CLOTH
 
 log = LoggingUtil().get_logger()
 
-preset_chosen: str = "hoc_portrait" # Modify this to change the preset
+preset_chosen: str = "default" # Modify this to change the preset
 current_preset = {}
 
 CustomNDArrayType: TypeAlias = Union[NDArray, List[NDArray]]
@@ -314,7 +314,7 @@ class _InitialImageGenerationParams(BaseModel):
     original_steps: int = False
 
     adaptive_cfg: float = Field(7.0, description="The default cfg tsnr to use.", ge=1.0, le=30.0)
-    cfg_scale: float = Field(DEFAULT_PRESET["cfg_scale"], description="Higher value means style is cleaner, vivider, and more artistic.", ge=1.0, le=30.0)
+    cfg_scale: float = Field(4.0, description="Higher value means style is cleaner, vivider, and more artistic.", ge=1.0, le=30.0)
     cfg_tsnr: float = Field(7.0, description="The default cfg tsnr to use.")
     
     adm_scaler_end: float = Field(0.3, description="The default adm scaler end to use.", ge=0.0, le=1.0)
@@ -525,14 +525,17 @@ class ImageGenerationObject(_InitialImageGenerationParams):
 
 
     
-    
+
 
 HooocusConfig = ImageGenerationObject(**current_preset)
 DefaultConfigImageGen = ImageGenerationObject(**DEFAULT_PRESET)
 
 class BatchTemplates:
-    HooocusConfig.performance_selection = Performance.LIGHTNING
+    HooocusConfig.performance_selection = Performance.SPEED
+    HooocusConfig.sample_sharpness = 10.0
+
     normal = HooocusConfig
+    normal_json = HooocusConfig.model_dump_json()
     
 
 """ 
