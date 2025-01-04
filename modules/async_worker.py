@@ -334,16 +334,6 @@ class ImageTaskProcessor:
         for imagepath in img_paths:
             logger.debug(f"Image path: {imagepath}")
             try:
-                _self.yields[uid].append(
-                    config.YieldObject(
-                        yield_type='redirect_image',
-                        progress=100,
-                        message=f'Image {id + 1}/{len(_self.tasks)} finished ...',
-                        url=f"{SERVER_URL}/photo/{imagepath}",
-                        
-                        uid=uid
-                    )
-                )
                 for _img in imgs:
                     _self.yields[uid].append(
                         config.YieldObject(
@@ -354,6 +344,23 @@ class ImageTaskProcessor:
                             uid=uid
                         )
                     )
+
+                    _self.yields[uid].append(
+                        config.YieldObject(
+                            yield_type='uri',
+                            progress=100,
+                            message=f"photo/{imagepath}",
+                            uid=uid
+                        )
+                    )
+
+                _self.yields[uid].append(
+                    config.YieldObject(
+                        yield_type='finish',
+                        message=f'ALL TASKS FINISHED',
+                        uid=uid
+                    ))
+                    
             except Exception as e:
                 logger.error(f"Error saving image: {e}")
                 traceback.print_exc()
