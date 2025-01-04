@@ -1,7 +1,10 @@
 import os, sys
+
+import consts
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CURR_DIR.split("db")[0])
 
+from consts import DB_URL, DB_URL_TEST
 from h3_utils.logging_util import LoggingUtil
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -11,13 +14,10 @@ from db.models.sqlalchemy_m import Base
 
 logger = LoggingUtil(__file__).get_logger()
 
-# Sqlite
-DB_URL = os.environ.get("DB_URL")
-if DB_URL is None:
-    logger.error("DB_URL is not set.")
-    exit(1)
+
 
 engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
+
 
 # Create a session object that will be used to interact with the database
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
