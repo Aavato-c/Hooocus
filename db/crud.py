@@ -31,9 +31,10 @@ def add_imageorder(db: Session, order_data: pm.ImageOrderInCreate) -> str:
         uuid_of_new_order (UUID): The ID of the new image order
     """
     try:
-        new_order = sm.ImageOrder(**order_data.model_dump())
+        new_order = pm.ImageOrderInCreate(generation_data=order_data.model_dump_json())
+        new_order_to_add = sm.ImageOrder(**new_order.model_dump())
         uuid_of_new_order = new_order.id
-        db.add(new_order)
+        db.add(new_order_to_add)
         db.commit()
         return uuid_of_new_order
     except Exception as e:
@@ -95,7 +96,7 @@ def get_imageorder(db: Session, order_id: UUIDType) -> pm.ImageOrderInResponse:
         if order is None:
             log.error(f"Image order not found: {order_id}")
             return False
-        return pm.ImageOrderInResponse.model_validate(**order.dict())
+        return pm.ImageOrderInResponse.model_validate(order)
     except Exception as e:
         log.error(f"Error getting image order: {e}")
         raise e    
