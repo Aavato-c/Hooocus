@@ -28,14 +28,14 @@ from numpy.typing import NDArray
 from h3_utils.logging_util import LoggingUtil
 from h3_utils.flags import EXAMPLE_ENHANCE_DETECTION_PROMPTS, INPAINT_MASK_CLOTH_CATEGORY, INPUT_IMAGE_MODES, KSAMPLER, OUTPAINT_SELECTIONS, REFINER_SWAP_METHODS, SDXL_ASPECT_RATIOS, UPSCALE_OR_VARIATION_MODES, LatentPreviewMethod, OutputFormat, Performance, ENHANCEMENT_UOV_AFTER, ENHANCEMENT_UOV_BEFORE, ENHANCEMENT_UOV_PROCESSING_ORDER
 
-CustomNDArrayType: TypeAlias = Union[NDArray, List[NDArray]]
+CustomNDArrayType = NDArray | List[NDArray]
 
 class BaseControlNetTaskForRequests(BaseModel):
     class Config:
         arbitrary_types_allowed = True
     
     stop: float = Field(0.5, ge=0, le=1)
-    img: Optional[CustomNDArrayType] = None
+    img: Optional[Any] = None
     weight: float = Field(1.0, ge=0, le=1)
     name: str = Field(None, description="Name of the ControlNetTask.")
 
@@ -162,10 +162,10 @@ class ImageGenerationObjectForRequests(BaseModel):
     use_image_input: bool = Field(False, description="Bool: should use image input?")
     image_input_mode: INPUT_IMAGE_MODES = Field("uov", description="The image input mode to use.") # utils.flags.input_image_tab_ids 
     
-    input_image: Optional[Dict[Literal["image", "mask"], CustomNDArrayType]] = None
-    uov_input_image: Optional[CustomNDArrayType] = None
-    input_mask_image: Optional[Dict[Literal["image", "mask"], CustomNDArrayType]] = None
-    prepared_input_mask_image: Optional[CustomNDArrayType] = None
+    input_image: Optional[Dict[Literal["image", "mask"], Any]] = None
+    uov_input_image: Optional[Any] = None
+    input_mask_image: Optional[Dict[Literal["image", "mask"], Any]] = None
+    prepared_input_mask_image: Optional[Any] = None
     enhance_input_image: Optional[bool] = None
 
 
