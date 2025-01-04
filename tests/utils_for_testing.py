@@ -2,6 +2,8 @@ import os, sys
 import io
 import random
 import time
+
+import consts
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CURR_DIR.split("tests")[0])
 
@@ -28,7 +30,6 @@ dotenv.load_dotenv()
 
 log = LoggingUtil("Test_db_setup").get_logger()
 
-DB_URL_TEST = os.environ.get("DB_URL_TEST")
 
 Base: DeclarativeBase = dbm.Base
 
@@ -46,9 +47,14 @@ Base: DeclarativeBase = dbm.Base
         master_engine.clear_compiled_cache()
         time.sleep(10) """
 
-main_engine = create_engine(DB_URL_TEST)
+main_engine = create_engine(consts.DB_URL_TEST)
 Base.metadata.create_all(bind=main_engine)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=main_engine)
+
+# GLOBAL VAR USAGE
+# Affects the database connection in db/database.py (get_db_unmanaged)
+consts.TESTING = "True"
+
 
 def get_test_db():
     db = SessionLocal()
@@ -58,6 +64,14 @@ def get_test_db():
         db.close()
 
 app.dependency_overrides[get_db] = get_test_db
+
+def test_entry():
+    # Run this with:
+    # $ uvicorn "tests.utils_for_testing:test_entry" --port 8111 --host '127.0.0.1'
+    app.dependency_overrides[get_db] = get_test_db
+    return app
+
+
 test_client_main = TestClient(app)
 test_client_secondary = TestClient(app)
 
