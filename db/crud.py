@@ -1,11 +1,15 @@
+import re
 import os, sys
 import json
+from typing import Literal
+
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CURR_DIR.split("db")[0])
 
 from sqlalchemy.orm import Session
 from sqlalchemy import UUID as UUIDType
 
+from db.utils import get_timestamp
 from db.models import pydantic_m as pm
 from db.models import sqlalchemy_m as sm
 
@@ -16,12 +20,34 @@ log = LoggingUtil(__name__).get_logger()
 # =============================================================================
 #    Image order functions
 # =============================================================================
-def add_imageorder(db: Session, order_data: pm.ImageOrderInCreate) -> pm.ImageOrderInResponse:
+def add_imageorder(db: Session, order_data: pm.ImageOrderInCreate) -> str:
     """Add a new image order to the database
 
     Args:
         db (Session): SQLAlchemy Session
         order_data (pm.ImageOrderInCreate): Image order data
+        
+    Returns:
+        uuid_of_new_order (UUID): The ID of the new image order
+    """
+    try:
+        new_order = sm.ImageOrder(**order_data.model_dump())
+        uuid_of_new_order = new_order.id
+        db.add(new_order)
+        db.commit()
+        return uuid_of_new_order
+    except Exception as e:
+        log.error(f"Error adding event: {e}")
+        raise e
+
+def update_imageorder_status(db: Session, order_id: UUIDType, status: bool, uri: str = None) -> bool:
+    """Update the status of an image order
+
+    Args:
+        db (Session): SQLAlchemy Session
+        order_id (UUID): The ID of the image order
+        status (bool): The status of the image order (True if generated, False if not)
+        uri (Optional[str], None): The URI of the image, default is None
         
     Returns:
         bool: True if successful 
@@ -30,12 +56,70 @@ def add_imageorder(db: Session, order_data: pm.ImageOrderInCreate) -> pm.ImageOr
         Exception: If an error occurs
     """
     try:
-        new_order = sm.ImageOrder(**order_data.model_dump())
-        db.add(new_order)
+        order = db.query(sm.ImageOrder).filter(sm.ImageOrder.id == order_id).first()
+        order.has_been_generated = status
+        order.image_uri = uri
+        order.updated_at = get_timestamp()
         db.commit()
+
+        # =====================================================================
+        # Can be removed later
+        try:
+            # Check if the order has been updated
+            updated_order = db.query(sm.ImageOrder).filter(sm.ImageOrder.id == order_id).first()
+            if updated_order.has_been_generated != status:
+                raise Exception("Failed to update image order status")
+        except Exception as e:
+            log.error(f"Error updating image order status: {e}")
+            raise e
+        # =====================================================================
+            
         return True
     except Exception as e:
-        log.error(f"Error adding event: {e}")
+        log.error(f"Error updating image order status: {e}")
         raise e
+    
+def get_imageorder(db: Session, order_id: UUIDType) -> pm.ImageOrderInResponse:
+    """Get an image order from the database
 
+    Args:
+        db (Session): SQLAlchemy Session
+        order_id (UUID): The ID of the image order
+        
+    Returns:
+        pm.ImageOrderInResponse: The image order
 
+    """
+    try:
+        order = db.query(sm.ImageOrder).filter(sm.ImageOrder.id == order_id).first()
+        if order is None:
+            log.error(f"Image order not found: {order_id}")
+            return False
+        return pm.ImageOrderInResponse.model_validate(**order.dict())
+    except Exception as e:
+        log.error(f"Error getting image order: {e}")
+        raise e    
+
+def should_generate_or_url(db: Session, order_id: UUIDType) -> Literal["generate", "url", "not_found"]:
+    """Check if an image order should be generated or if the URL should be returned
+
+    Args:
+        db (Session): SQLAlchemy Session
+        order_id (UUID): The ID of the image order
+        
+    Returns:
+        Literal["generate", "url", "not_found"]: "generate" if the image should be generated, "url" if the URL should be returned, "not_found" if the image order is not found
+
+    Raises:
+        Exception: If an error occurs
+    """
+    try:
+        order = db.query(sm.ImageOrder).filter(sm.ImageOrder.id == order_id).first()
+        if order is None:
+            return "not_found"
+        if order.has_been_generated:
+            return "url"
+        return "generate"
+    except Exception as e:
+        log.error(f"Error getting image URL: {e}")
+        raise e
