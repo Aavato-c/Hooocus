@@ -1,5 +1,5 @@
 {
-    "model": "juggernautXL_v8Rundiffusion.safetensors",
+    "base_model_name": "juggernautXL_v8Rundiffusion.safetensors",
     "refiner": false,
     "refiner_switch": 0.5,
     "loras": [

@@ -1,5 +1,5 @@
 {
-    "model": "playground-v2.5-1024px-aesthetic.fp16.safetensors",
+    "base_model_name": "playground-v2.5-1024px-aesthetic.fp16.safetensors",
     "refiner": "None",
     "refiner_switch": 0.5,
     "loras": [

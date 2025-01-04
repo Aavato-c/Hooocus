@@ -289,7 +289,7 @@ class _InitialImageGenerationParams(BaseModel):
     sampler_name: KSAMPLER_NAMES_LIT = DEFAULT_PRESET["sampler"]
     scheduler_name: str = DEFAULT_PRESET["scheduler"]
     
-    base_model_name: str = Field(DEFAULT_PRESET["model"], description="The default model to use.", alias="model")
+    base_model_name: str = Field(DEFAULT_PRESET["base_model_name"], description="The default model to use.", alias="model")
     refiner_model: str | bool = Field(DEFAULT_PRESET["refiner"], description="The default refiner model to use.", )
     refiner_switch: float = Field(DEFAULT_PRESET["refiner_switch"], description="Refiner switch", ge=0.0, le=1.0)
     refiner_swap_method: REFINER_SWAP_METHODS = "joint"

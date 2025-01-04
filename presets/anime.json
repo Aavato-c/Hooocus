@@ -1,5 +1,5 @@
 {
-    "model": "animaPencilXL_v500.safetensors",
+    "base_model_name": "animaPencilXL_v500.safetensors",
     "refiner": "None",
     "refiner_switch": 0.5,
     "loras": [

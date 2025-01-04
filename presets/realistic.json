@@ -1,5 +1,5 @@
 {
-    "model": "realisticStockPhoto_v20.safetensors",
+    "base_model_name": "realisticStockPhoto_v20.safetensors",
     "refiner": false,
     "refiner_switch": 0.5,
     "loras": [

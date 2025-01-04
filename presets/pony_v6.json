@@ -1,5 +1,5 @@
 {
-    "model": "ponyDiffusionV6XL.safetensors",
+    "base_model_name": "ponyDiffusionV6XL.safetensors",
     "refiner": "None",
     "refiner_switch": 0.5,
     "vae": "ponyDiffusionV6XL_vae.safetensors",

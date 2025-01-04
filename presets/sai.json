@@ -1,5 +1,5 @@
 {
-    "model": "sd_xl_base_1.0_0.9vae.safetensors",
+    "base_model_name": "sd_xl_base_1.0_0.9vae.safetensors",
     "refiner": "sd_xl_refiner_1.0_0.9vae.safetensors",
     "refiner_switch": 0.75,
     "loras": [
