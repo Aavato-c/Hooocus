@@ -22,7 +22,7 @@ class FolderPathsConfig:
     path_sam = "./models/sam/"
     
     default_temp_path = os.path.join(tempfile.gettempdir(), 'hooocus')
-    path_outputs: str = "./outputs"
+    path_outputs: str = "outputs" # Don't use a dot here
 
 class _EnumFolderPaths(Enum):
     path_checkpoints = "./models/checkpoints/"
