@@ -1,14 +1,14 @@
-
 import os
 import sys
 from typing import Annotated
 from uuid import uuid4
 import uvicorn
 
-from h3_utils.path_configs import FolderPathsConfig
-from server.auth_handlers import verify_user
 ROOT_DIR = os.path.abspath(__file__).split("server")[0]
 sys.path.append(ROOT_DIR)
+from h3_utils.flags import SDXL_ASPECT_RATIOS_CLASS
+from h3_utils.path_configs import FolderPathsConfig
+from server.auth_handlers import verify_user
 
 from sqlalchemy.orm import Session
 
@@ -28,9 +28,7 @@ from unavoided_globals import img_processor_globlal, shared
 log = LoggingUtil(name="main.py").get_logger()
 
 
-ags = sys.argv
-if len(ags) > 1:
-    GUNICORN_ID = ags[1]
+
     
 app = FastAPI()
 
@@ -93,6 +91,7 @@ def main_entry(process_uuid = None, max_processes = 1):
         img_processor_globlal.create_image_processor()
         return app
 
+
 if __name__ == "__main__":
     app = main_entry("RANDOM_UUID")
-    uvicorn.run(app)
+    uvicorn.run(app, port=8111)
