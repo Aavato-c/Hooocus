@@ -608,6 +608,10 @@ class ImageTaskProcessor:
                 if len(self.generation_tasks) > 0:
                     self.processing = True
                     task = self.generation_tasks.pop(0)
+                    if not isinstance(task.developer_options, config.DeveloperOptions):
+                        task.developer_options = config.DeveloperOptions.model_validate(task.developer_options)
+                        
+                        
                     self.process_single_task(task)
                 else:
                     time.sleep(1.0)
