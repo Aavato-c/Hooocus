@@ -4,8 +4,11 @@ from typing import Annotated
 from uuid import uuid4
 import uvicorn
 
+
 ROOT_DIR = os.path.abspath(__file__).split("server")[0]
 sys.path.append(ROOT_DIR)
+
+from server.models_for_server import ImageGenerationObjectForRequests
 from h3_utils.flags import SDXL_ASPECT_RATIOS_CLASS
 from h3_utils.path_configs import FolderPathsConfig
 from server.auth_handlers import verify_user
@@ -70,7 +73,7 @@ def serve_photo(file_uuid: str, extension: str, db: Session = Depends(get_db)):
         return JSONResponse(status_code=500, content="")
 
 @app.post("/gen/photo/normal")
-def get_photo_genobject(_is_verified: Annotated[bool, Depends(verify_user)], request: dict, db: Session = Depends(get_db)):
+def get_photo_genobject(_is_verified: Annotated[bool, Depends(verify_user)], request: ImageGenerationObjectForRequests, db: Session = Depends(get_db)):
     try:
         request_validated = ImageGenerationObject.model_validate(request)
         request_validated.aspect_ratio = SDXL_ASPECT_RATIOS_CLASS.PORTRAIT.R896_1152
