@@ -12,7 +12,12 @@ from db.models.sqlalchemy_m import Base
 logger = LoggingUtil(__file__).get_logger()
 
 # Sqlite
-engine = create_engine("sqlite:///./db/db.sqlite", connect_args={"check_same_thread": False})
+DB_URL = os.environ.get("DB_URL")
+if DB_URL is None:
+    logger.error("DB_URL is not set.")
+    exit(1)
+
+engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
 
 # Create a session object that will be used to interact with the database
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
