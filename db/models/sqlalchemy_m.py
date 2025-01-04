@@ -1,4 +1,6 @@
 import os, sys
+
+from db.utils import get_uuid
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CURR_DIR.split("db")[0])
 
@@ -37,7 +39,7 @@ class ImageOrder(Base):
     """
     __tablename__ = 'image'
     
-    id = Column(UUIDType(as_uuid=True), primary_key=True, default=uuid4)
+    id = Column(UUIDType(as_uuid=True), primary_key=True, default=get_uuid())
     soft_delete = Column(Boolean, default=False, nullable=False)
     created_at = Column(REAL, default=dt.datetime.now().timestamp(), nullable=False)
     updated_at = Column(REAL, default=dt.datetime.now().timestamp(), nullable=False)
@@ -45,3 +47,4 @@ class ImageOrder(Base):
     image_uri =  Column(String, nullable=True)
     generation_data = Column(JSON, nullable=False)
     has_been_generated = Column(Boolean, default=False, nullable=False)
+    
