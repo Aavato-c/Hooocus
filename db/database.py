@@ -47,6 +47,7 @@ def get_db():
         db.close()
 
 def get_db_unmanaged():
+    # GLOBAL VAR OBSERVATION
     if consts.TESTING == True:
         engine_test = create_engine(DB_URL_TEST, connect_args={"check_same_thread": False})
         SessionLocalTesting = sessionmaker(autocommit=False, autoflush=False, bind=engine_test)
