@@ -47,7 +47,7 @@ class ImageOrderInDb(SharedBase):
     """
 
     image_uri: Optional[str] = None
-    generation_data: Dict[str, Any]
+    generation_data: object | dict
     has_been_generated: bool = False
 
 class ImageOrderInCreate(BaseModel):
@@ -69,7 +69,7 @@ class ImageOrderInCreate(BaseModel):
     updated_at: float = Field(default_factory=get_timestamp)
     soft_delete: Optional[bool] = False
 
-    generation_data: Dict[str, Any]
+    generation_data: object | dict
     image_uri: Optional[str] = None
     has_been_generated: Optional[bool] = False
     
@@ -87,6 +87,6 @@ class ImageOrderInResponse(SharedBase):
         has_been_generated (bool): Whether the image has been generated
 
     """
-    generation_data: Dict[str, Any]
+    generation_data: object | dict
     image_uri: Optional[str] = None
     has_been_generated: bool
