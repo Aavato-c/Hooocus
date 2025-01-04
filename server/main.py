@@ -72,7 +72,22 @@ def serve_photo(file_uuid: str, extension: str, db: Session = Depends(get_db)):
         log.error(f"Error serving photo: {e}")
         return JSONResponse(status_code=500, content="")
 
-@app.post("/gen/photo/normal")
+auth_doc = {
+    "parameters": [
+        {
+            "name": "Authorization",
+            "in": "header",
+            "required": True,
+            "description": "Bearer token",
+            "schema": {
+                "type": "string"
+            }
+        }
+    ]
+}
+
+
+@app.post("/gen/photo/normal", openapi_extra=auth_doc)
 def get_photo_genobject(_is_verified: Annotated[bool, Depends(verify_user)], request: ImageGenerationObjectForRequests, db: Session = Depends(get_db)):
     try:
         request_validated = ImageGenerationObject.model_validate(request)
