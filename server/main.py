@@ -42,17 +42,17 @@ if SERVER_URL is None:
 def read_root():
     return JSONResponse(content="Hello World", status_code=200)
 
-@app.get("/{file_uuid}.{extension}")
+@app.get("/photo/{file_uuid}.{extension}")
 def serve_photo(file_uuid: str, extension: str, db: Session = Depends(get_db)):
     try:
-        gen_status = crud.should_generate_or_url(file_uuid)
+        gen_status = crud.should_generate_or_url(db, file_uuid)
         match gen_status:
             
             case "generate":
                 order_data = crud.get_imageorder(db, file_uuid)
                 if order_data is None:
                     return JSONResponse(content="", status_code=404)
-                StreamingResponse(generate_image_to_stream(order_data, file_uuid), media_type="multipart/x-mixed-replace; boundary=frame")
+                return StreamingResponse(generate_image_to_stream(order_data, file_uuid), media_type="multipart/x-mixed-replace; boundary=frame")
             
             case "url":
                 if os.path.exists(f"{FolderPathsConfig.path_outputs}/{file_uuid}.{extension}"):
@@ -63,22 +63,29 @@ def serve_photo(file_uuid: str, extension: str, db: Session = Depends(get_db)):
                     raise HTTPException(status_code=500)
             
             case "not_found":
-                return JSONResponse(status_code=404)
+                return JSONResponse(status_code=404, content="")
         
     except Exception as e:
         log.error(f"Error serving photo: {e}")
-        return JSONResponse(status_code=500)
-    
+        return JSONResponse(status_code=500, content="")
+
 @app.post("/gen/photo/normal")
 def get_photo_genobject(_is_verified: Annotated[bool, Depends(verify_user)], request: dict, db: Session = Depends(get_db)):
     try:
         request_validated = ImageGenerationObject.model_validate(request)
+        request_validated.aspect_ratio = SDXL_ASPECT_RATIOS_CLASS.PORTRAIT.R896_1152
         uuid_of_order = crud.add_imageorder(db, request_validated)
-        return RedirectResponse(url=f"{SERVER_URL}/{uuid_of_order}.webp")
+        return JSONResponse(
+            content={
+                "uuid": uuid_of_order,
+                "url": f"{SERVER_URL}/photo/{uuid_of_order}.webp",
+                "test_url": f"http://127.0.0.1:8111/photo/{uuid_of_order}.webp",
+            },
+            status_code=201,
+        )
     except Exception as e:
         log.error(f"Error adding image order: {e}")
         return JSONResponse(status_code=500)
-
 
 
 def main_entry(process_uuid = None, max_processes = 1):
