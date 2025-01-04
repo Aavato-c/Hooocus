@@ -20,6 +20,7 @@ from torch import Tensor, tensor
 import torch
 
 from h3_utils import logging_util
+from h3_utils.path_configs import FolderPathsConfig
 from modules.imagen_utils.imagen_patch_utils.patch import patch_all
 from unavoided_globals import unavoided_global_vars
 from extras import face_crop, preprocessors
@@ -74,8 +75,8 @@ from unavoided_globals.unavoided_global_vars import (
 import ldm_patched.modules.model_management
 
 patch_all()
-SERVER_URL = os.environ.get("SERVER_URL", None)
-OUTPUT_DIR = os.environ.get("IMAGE_OUTPUT_DIR", None)
+
+OUTPUT_DIR = FolderPathsConfig.path_outputs
 
 if SERVER_URL is None:
     log.error("SERVER_URL is not set.")
@@ -84,6 +85,11 @@ if SERVER_URL is None:
 GlobalConfig = config.LAUNCH_ARGS
 
 logger = LoggingUtil(name="ImageTaskProcessor").get_logger()
+
+SERVER_URL = os.environ.get("SERVER_URL", None)
+if SERVER_URL is None:
+    logger.error("SERVER_URL is not set in .env")
+    exit(1)
 
 class EarlyReturnException(BaseException):
     pass
