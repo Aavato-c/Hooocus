@@ -1,6 +1,7 @@
-POST http://127.0.0.1:8000/getphoto
+POST http://127.0.0.1:8111/gen/photo/normal
 content-type: application/json
 Access-Control-Allow-Origin: *
+Authorization: Bearer TOKEN HERE
 
 {
     "uid": "",
@@ -127,6 +128,3 @@ Access-Control-Allow-Origin: *
     "uov_method": null,
     "steps_uov": -1
 }
-
-
-
