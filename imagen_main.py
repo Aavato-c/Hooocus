@@ -11,6 +11,8 @@ from fastapi.responses import HTMLResponse
 from numpy import ndarray
 from regex import E, F
 from torch import seed
+from db import crud
+from db.database import get_db
 from h3_utils.flags import Performance
 from h3_utils.launch.launch import prepare_environment
 from modules.async_worker import ImageTaskProcessor
@@ -243,6 +245,8 @@ def generate_image_to_stream(seed_generation_task: ImageGenerationObject, unique
                     raise Exception('Error encoding image.')
                 else:
                     log.debug('Image result generated.')
+                    with get_db() as db:
+                        crud.update_imageorder_status(db, unique_id, True)
                     finished = True
                     if not DEBUG_IMAGEN:
                         yield (
