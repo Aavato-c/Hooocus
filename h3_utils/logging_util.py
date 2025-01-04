@@ -16,7 +16,7 @@ class LoggingUtil:
         else:
             self.logger = logging.getLogger(name)
         self.logger.propagate = False # Prevents double logging
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.INFO)
         #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         formatter = logging.Formatter('%(levelname)s:%(asctime)s:%(module)s:%(lineno)d:\t%(message)s', datefmt='%m%d:%H:%M:%S')
         #file_handler = logging.FileHandler('logs/combined_2.log')
@@ -26,7 +26,7 @@ class LoggingUtil:
 
         stream_handler = logging.StreamHandler()
         stream_handler.setFormatter(formatter)
-        stream_handler.setLevel(logging.DEBUG)
+        stream_handler.setLevel(logging.INFO)
         self.logger.addHandler(stream_handler)
         
 
