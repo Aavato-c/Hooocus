@@ -412,7 +412,7 @@ class ApplyImageInputParams(BaseModel):
     use_synthetic_refiner: bool
 
 
-yield_types = Literal['preview', 'result', 'result_in_callback', 'message', 'image', 'finish', 'redirect_image']
+yield_types = Literal['preview', 'result', 'waiting', 'uri', 'finish']
 
 class YieldObject(BaseModel):
     class Config:
@@ -420,11 +420,10 @@ class YieldObject(BaseModel):
         arbitrary_types_allowed = True
 
     yield_type: yield_types
-    progress: float
-    message: str
+    progress: Optional[float] = None
+    message: Optional[str] = None
     image: Optional[numpy.ndarray] = None
     uid: str
-    url: Optional[str] = None
 
 class ImageGenerationObject(_InitialImageGenerationParams):
     
