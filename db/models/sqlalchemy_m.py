@@ -37,9 +37,9 @@ class ImageOrder(Base):
         has_been_generated (bool): A flag to indicate if the image has been generated.
 
     """
-    __tablename__ = 'image'
+    __tablename__ = 'image_order'
     
-    id = Column(UUIDType(as_uuid=True), primary_key=True, default=get_uuid())
+    id = Column(UUIDType(as_uuid=False), primary_key=True, default=get_uuid())
     soft_delete = Column(Boolean, default=False, nullable=False)
     created_at = Column(REAL, default=dt.datetime.now().timestamp(), nullable=False)
     updated_at = Column(REAL, default=dt.datetime.now().timestamp(), nullable=False)
