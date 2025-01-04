@@ -30,12 +30,6 @@ def get_db():
     It is a generator function that will automatically close the connection after the operation is done.
     The connection object is used to interact with the database in crud.py.
 
-    Usage:
-    ```
-    with get_db() as db:
-        db.query(...)
-    ```
-
     Args:
         None
 
