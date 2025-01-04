@@ -134,33 +134,28 @@ class ImageTaskProcessor:
                         raise Exception(f"Process identifier {self.process_identifier} already in cache. This shouldn't happen.")
                     
                     if len(curr_pid_pairs) >= self.max_processes:
-                        logger.warning(f"Multiple PIDs found in cache: {curr_pids}")
+                        logger.warning(f"Max processes reached: {len(curr_pid_pairs)}")
+                        logger.warning(f"There can be only {self.max_processes} processes running at the same time.")
                         processes_killed = []
-                        for pidpair in curr_pid_pairs[:self.max_processes-1]:
+                        for pidpair in curr_pid_pairs:
                             if len(pidpair) != 2:
                                 logger.warning(f"Invalid PID pair: {pidpair}")
                                 raise Exception(f"Invalid PID pair: {pidpair}")
                             pid = int(pidpair[0])
                             if pid != self.pid:
                                 logger.warning(f"Killing PID {pid}")
-                                os.system(f"kill -9 {pid}")
-                                processes_killed.append(pidpair)
+                                os.system(f"kill {pid}")
+                                curr_pid_pairs.remove(pidpair)
+
                             else:
                                 logger.warning(f"PID {pid} is the current PID. Unhandled.")
-                        if len(processes_killed) > 0:
-                            logger.warning(f"Killed processes: {processes_killed}")
-                            for killed in processes_killed:
-                                curr_pids.remove(f"{killed[0]}:{killed[1]}")
-                            with open("__cache__/pids.txt", "w") as f:
-                                curr_pids = [f"{x[0]}:{x[1]}" for x in curr_pid_pairs]
-                                f.write("\n".join(curr_pids))
-                                
-                        else:
-                            logger.warning(f"No processes killed.")
-
-
-            with open("__cache__/pids.txt", "a") as f:
-                f.write(f"{self.process_identifier}\n")
+                        
+                        with open("__cache__/pids.txt", "w") as f:
+                            curr_pids = [f"{x[0]}:{x[1]}" for x in curr_pid_pairs]
+                            f.write("\n".join(curr_pids))     
+                else:
+                    with open("__cache__/pids.txt", "w") as f:
+                        f.write(f"{self.process_identifier}\n")
         else:
             with open("__cache__/pids.txt", "w") as f:
                 f.write(f"{self.process_identifier}\n")
