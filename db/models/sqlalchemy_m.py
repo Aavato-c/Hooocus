@@ -1,6 +1,4 @@
 import os, sys
-
-from db.utils import get_uuid
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CURR_DIR.split("db")[0])
 
@@ -16,6 +14,8 @@ from sqlalchemy import (
     UUID as UUIDType)
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import declarative_base
+
+from db.utils import get_uuid
 
 Base = declarative_base()
 
@@ -47,4 +47,3 @@ class ImageOrder(Base):
     image_uri =  Column(String, nullable=True)
     generation_data = Column(JSON, nullable=False)
     has_been_generated = Column(Boolean, default=False, nullable=False)
-    
