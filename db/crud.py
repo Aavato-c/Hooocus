@@ -20,7 +20,7 @@ log = LoggingUtil(__name__).get_logger()
 # =============================================================================
 #    Image order functions
 # =============================================================================
-def add_imageorder(db: Session, order_data: pm.ImageOrderInCreate) -> str:
+def add_imageorder(db: Session, order_data: pm.ImageOrderInCreate, optional_uuid: UUIDType = None) -> UUIDType:
     """Add a new image order to the database
 
     Args:
@@ -33,7 +33,16 @@ def add_imageorder(db: Session, order_data: pm.ImageOrderInCreate) -> str:
     try:
         new_order = pm.ImageOrderInCreate(generation_data=order_data.model_dump_json())
         new_order_to_add = sm.ImageOrder(**new_order.model_dump())
-        uuid_of_new_order = new_order.id
+        
+        if optional_uuid is not None:
+            log.warning(f"Optional UUID provided: {optional_uuid}")
+            new_order_to_add.id = optional_uuid
+        else:
+            log.warning("No optional UUID provided")
+            new_order_to_add.id = new_order.id
+
+        uuid_of_new_order = new_order_to_add.id
+        log.warning(f"Adding new image order with uid: {uuid_of_new_order}")
         db.add(new_order_to_add)
         db.commit()
         return uuid_of_new_order
