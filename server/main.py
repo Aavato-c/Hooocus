@@ -110,7 +110,7 @@ def get_photo_genobject(_is_verified: Annotated[bool, Depends(verify_user)], req
         return JSONResponse(status_code=500)
 
 
-def main_entry(process_uuid = None, max_processes = 1):
+def main_entry(process_uuid = None, max_processes = 4):
     if process_uuid == None:
         log.error("No entry value provided.")
         sys.exit(1)

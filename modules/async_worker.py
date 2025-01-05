@@ -91,7 +91,7 @@ class EarlyReturnException(BaseException):
     pass
 
 class ImageTaskProcessor:
-    def __init__(self, global_uuid: str = None, max_processes: int = 1):
+    def __init__(self, global_uuid: str = None, max_processes: int = 4):
         self.global_uuid = global_uuid
         self.max_processes = max_processes
         self.initialize_processor()
