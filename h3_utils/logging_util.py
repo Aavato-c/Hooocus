@@ -13,8 +13,6 @@ class LoggingUtil:
         if not name:
             name = "_"
             self.logger = logging.getLogger(name)
-            if os.path.exists('logs/combined.log'):
-                os.remove('logs/combined.log')
         else:
             self.logger = logging.getLogger(name)
 
