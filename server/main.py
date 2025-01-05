@@ -91,8 +91,12 @@ auth_doc = {
 def get_photo_genobject(_is_verified: Annotated[bool, Depends(verify_user)], request: ImageGenerationObjectForRequests, db: Session = Depends(get_db)):
     try:
         request_validated = ImageGenerationObject.model_validate(request)
-        request_validated.aspect_ratio = SDXL_ASPECT_RATIOS_CLASS.PORTRAIT.R896_1152
-        uuid_of_order = crud.add_imageorder(db, request_validated)
+        if request_validated.uid != "":
+            log.debug(f"Adding image order with UID: {request_validated.uid}. UID was provided.")
+            uuid_of_order = crud.add_imageorder(db, request_validated, request_validated.uid)
+        else:
+            log.debug("Adding image order.")
+            uuid_of_order = crud.add_imageorder(db, request_validated)
         return JSONResponse(
             content={
                 "uuid": uuid_of_order,
