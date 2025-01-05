@@ -14,7 +14,7 @@ from unavoided_globals.img_processor_globlal import create_image_processor
 from PIL import Image, ImageDraw, ImageFont
 from h3_utils.logging_util import LoggingUtil
 import time
-from h3_utils.config import LAUNCH_ARGS, BatchTemplates, ImageGenerationObject, OverWriteControls, YieldObject
+from h3_utils.config import LAUNCH_ARGS, HooocusConfig, ImageGenerationObject, OverWriteControls, YieldObject
 
 log = LoggingUtil(name="imagen_main.py").get_logger()
 
@@ -142,15 +142,13 @@ def generate_image_to_stream(
         if not imgProcessor:
             raise Exception('Image processor not created.')
         
-    normal_template = BatchTemplates.normal
+    normal_template = HooocusConfig
     gentask = json.loads(seed_generation_task.generation_data)
     newtask = ImageGenerationObject(**gentask)
-    newtask.seed = random.randint(LAUNCH_ARGS.min_seed, LAUNCH_ARGS.max_seed)
-    newtask.uid = unique_id
-    newtask.adaptive_cfg = 4
-    newtask.cfg_scale = 2.0
+    if newtask.uid != unique_id:
+        newtask.uid = unique_id
+
     #newtask.overwrite_controls = OverWriteControls(overwrite_step=12)
-    newtask.sample_sharpness = 10.5
     final_task = normal_template.model_copy(update=newtask.model_dump())
     imgProcessor.generation_tasks.append(final_task)
     finished = False
