@@ -78,7 +78,7 @@ class ImageGenerationObjectForRequests(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    uid: str = Field("", description="The default uid to use.")
+    uid: Optional[str] = ""
     has_been_processed: bool = False
     
     negative_prompt: str = Field("", description="The default negative prompt to use.")
