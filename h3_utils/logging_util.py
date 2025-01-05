@@ -22,7 +22,7 @@ class LoggingUtil:
         formatter = logging.Formatter('%(levelname)s:%(asctime)s:%(module)s:%(lineno)d:\t%(message)s', datefmt='%m%d:%H:%M:%S')
         
         if self.log_to_file:
-            file_handler = RotatingFileHandler('logs/combined.log', maxBytes=5_000_000, backupCount=3) # 5MB
+            file_handler = RotatingFileHandler('logs/combined.log', maxBytes=150_000_000, backupCount=3) # 150 MB
             file_handler.setLevel(logging.INFO)
             file_handler.setFormatter(formatter)
             self.logger.addHandler(file_handler)
