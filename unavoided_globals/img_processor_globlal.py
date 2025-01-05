@@ -1,13 +1,11 @@
 
 import os, sys
 
-from h3_utils.flags import Performance
 from unavoided_globals import shared
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
 
 import threading
-from h3_utils.config import BatchTemplates
 from modules.async_worker import ImageTaskProcessor
 from unavoided_globals.global_model_management import global_model_management
 
