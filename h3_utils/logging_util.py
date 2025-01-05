@@ -8,7 +8,7 @@ if not os.path.exists('logs'):
 
 
 class LoggingUtil:
-    def __init__(self, name: str = None, log_to_file: bool = False):
+    def __init__(self, name: str = None, log_to_file: bool = True):
         self.log_to_file = log_to_file
         if not name:
             name = "_"
