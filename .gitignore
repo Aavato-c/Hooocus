@@ -84,3 +84,4 @@ tests/iters/*.txt
 db/*.sqlite
 all_requirements.txt
 requirements_versions_updated.txt
+tests/test_gen_to_server.py
