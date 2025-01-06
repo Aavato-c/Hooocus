@@ -248,6 +248,11 @@ class ControlNetTasks:
         ]
     )
 
+    def by_name(self, name: str, update_with: dict):
+        task_base = getattr(self, name)
+        task_base = task_base.copy(update=update_with)
+        return task_base
+
 UpscaleModel = _BaseModelFile(
     url_of_model="https://huggingface.co/lllyasviel/misc/resolve/main/fooocus_upscaler_s409985e5.bin",
     name_of_model="fooocus_upscaler",

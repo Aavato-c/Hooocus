@@ -43,7 +43,6 @@ SDXL_ASPECT_RATIOS = Literal[
 ]
 
 
-
 class SDXL_ASPECT_RATIOS_CLASS:
     class PORTRAIT:
         R960_1088 = '960*1088'
@@ -185,7 +184,20 @@ SAMPLERS = KSAMPLER | EXTRA_KSAMPLER
 DEFAULT_SAMPLER = KSAMPLER.dpmpp_2m_sde_gpu
 
 SCHEDULER_NAMES = ["normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "lcm", "turbo", "align_your_steps", "tcd", "edm_playground_v2.5"]
-SCHEDULER_NAMES_LITERAL = Literal[SCHEDULER_NAMES]
+class SCHEDULER_NAMES_CLS:
+    normal = "normal"
+    karras = "karras"
+    exponential = "exponential"
+    sgm_uniform = "sgm_uniform"
+    simple = "simple"
+    ddim_uniform = "ddim_uniform"
+    lcm = "lcm" 
+    turbo = "turbo"
+    align_your_steps = "align_your_steps"
+    tcd = "tcd"
+    edm_playground_v2_5 = "edm_playground_v2.5"
+
+SCHEDULER_NAMES_LITERAL = Literal["normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "lcm", "turbo", "align_your_steps", "tcd", "edm_playground_v2.5"]
 
 class _AvailableConfigsBase(Enum):
     pass
@@ -204,7 +216,7 @@ class OutputFormat:
     WEBP = 'webp'
 
 OUTPUTFORMAT_LIT = Literal["png", "jpeg", "webp"]
-    
+
 class PerformanceLoRA(_AvailableConfigsBase):
     QUALITY = None
     SPEED = None
@@ -265,7 +277,6 @@ class Performance(_AvailableConfigsBase):
         return PerformanceLoRA[self.name].value if self.name in PerformanceLoRA.__members__ else None
 
 
-
 INPAINT_ENGINE_VERSIONS = Literal["1.0", "2.5", "2.6"]
 AVAILABLE_PRESETS = get_presets()
 MODEL_FILENAMES = get_model_filenames(FolderPathsConfig.path_checkpoints)
@@ -275,7 +286,3 @@ WILDCARD_FILENAMES = get_files_from_folder(FolderPathsConfig.path_wildcards, ['.
 
 performance_lora_keys = PerformanceLoRA.__members__.keys()
 performance_keys = Performance.__members__.keys()
-
-
-
-

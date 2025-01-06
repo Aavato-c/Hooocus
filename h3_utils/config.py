@@ -14,7 +14,7 @@ import random
 
 import numpy
 
-from h3_utils.flags import DESCRIBE_TYPE_PHOTO, ENHANCEMENT_UOV_PROMPT_TYPE_ORIGINAL, KSAMPLER, KSAMPLER_NAMES, KSAMPLER_NAMES_LIT, OUTPUTFORMAT_LIT, REFINER_SWAP_METHODS, SDXL_ASPECT_RATIOS, UPSCALE_OR_VARIATION_MODES, Overrides, Steps
+from h3_utils.flags import DESCRIBE_TYPE_PHOTO, ENHANCEMENT_UOV_PROMPT_TYPE_ORIGINAL, KSAMPLER, KSAMPLER_NAMES, KSAMPLER_NAMES_LIT, OUTPUTFORMAT_LIT, REFINER_SWAP_METHODS, SCHEDULER_NAMES_CLS, SCHEDULER_NAMES_LITERAL, SDXL_ASPECT_RATIOS, SDXL_ASPECT_RATIOS_CLASS, UPSCALE_OR_VARIATION_MODES, Overrides, Steps
 
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(PARENT_DIR)
@@ -160,7 +160,6 @@ class _LAUNCH_ARGS(BaseModel):
     always_offload_from_vram: bool = False
 
 
-
 LAUNCH_ARGS = _LAUNCH_ARGS()
 
 class FilePathConfig:
@@ -231,7 +230,7 @@ class InptaintOptions(BaseModel):
     inpaint_should_use_mask: bool = False
     inpaint_stop_ats: List[float] = Field([0.5, 0.5, 0.5, 0.5], description="The default inpaint stop ats to use.")
     inpaint_strength: float = 1.0 # min 0.0 max 1.0
-    
+
 
 class EnhanceMaskCtrls(BaseModel):
     """
@@ -268,7 +267,7 @@ class EnhanceMaskCtrls(BaseModel):
     enhance_uov_method: Optional[str] = Field(None, description="The default enhance uov method to use.")
     enhance_uov_processing_order: int = Field(ENHANCEMENT_UOV_BEFORE, description="The default enhance uov processing order to use.")
     enhance_uov_prompt_type: int = Field(ENHANCEMENT_UOV_PROMPT_TYPE_ORIGINAL, description="The default enhance uov prompt type to use.")
-    
+
 class LambdaStyle(BaseModel):
     name: str
     prompt: str
@@ -280,55 +279,60 @@ class _InitialImageGenerationParams(BaseModel):
 
     uid: str = Field("", description="The default uid to use.")
     has_been_processed: bool = False
-    
-    negative_prompt: str = Field(DEFAULT_PRESET["negative_prompt"], description="The default negative prompt to use.")
+
+    negative_prompt: str = Field("", description="The default negative prompt to use.")
     prompt: Optional[str] = Field(None, description="The default prompt to use.")
     read_wildcards_in_order: bool = False
 
     width: Optional[int] = Field(None, description="The default width to use.")
     height: Optional[int] = Field(None, description="The default height to use.")
-    
-    sample_sharpness: float = Field(DEFAULT_PRESET["sample_sharpness"], description="The default sample sharpness to use.", ge=0.0, le=30.0)
-    seed: int = random.randint(LAUNCH_ARGS.min_seed, LAUNCH_ARGS.max_seed)
-    sampler_name: KSAMPLER_NAMES_LIT = DEFAULT_PRESET["sampler"]
-    scheduler_name: str = DEFAULT_PRESET["scheduler"]
-    
-    base_model_name: str = Field(DEFAULT_PRESET["base_model_name"], description="The default model to use.", alias="model")
-    refiner_model: str | bool = Field(DEFAULT_PRESET["refiner"], description="The default refiner model to use.", )
-    refiner_switch: float = Field(DEFAULT_PRESET["refiner_switch"], description="Refiner switch", ge=0.0, le=1.0)
+
+    sample_sharpness: float = Field(2.0, description="The default sample sharpness to use.", ge=0.0, le=30.0)
+    seed: int = random.randint(0, 2**63 - 1)
+    sampler_name: KSAMPLER_NAMES_LIT = KSAMPLER.dpmpp_2m_sde_gpu.name
+    scheduler_name: SCHEDULER_NAMES_LITERAL = SCHEDULER_NAMES_CLS.karras
+
+    base_model_name: str = Field("juggernautXL_v8Rundiffusion.safetensors", description="The default model to use.", alias="model")
+    refiner_model: str | bool = Field(False, description="The default refiner model to use.", )
+    refiner_switch: float = Field(0.5, description="Refiner switch", ge=0.0, le=1.0)
     refiner_swap_method: REFINER_SWAP_METHODS = "joint"
-    loras: list = Field(DEFAULT_PRESET["loras"], description="The default LoRAs to use.")
-    styles: List[str | LambdaStyle] = Field(DEFAULT_PRESET["styles"], description="The default styles to use.")
+    loras: list = Field(
+        [[True, "None", 1.0],
+            [True, "None", 1.0],
+            [True, "None", 1.0],
+            [True, "None", 1.0],
+            [True, "None", 1.0],],
+        description="The default LoRAs to use.",)
+    
+    styles: List[str | LambdaStyle] = Field(["Fooocus V2","Fooocus Enhance","Fooocus Sharp"], description="Style additions for prompts")
+    additional_style_lamdas: List[LambdaStyle] = Field([], description="The default additional style lamdas to use.")
     
     vae_name: str = Field("Default (model)", description="The default vae to use.")
-    
+
     performance_selection: Performance = Performance.SPEED
     performance_loras: list = []
 
-    previous_default_models: List[str] = Field(DEFAULT_PRESET["previous_default_models"], description="The default previous default models to use.")
-    
     # Format and save options
     output_format: OUTPUTFORMAT_LIT = Field(OutputFormat.WEBP, description="Output format")
     save_metadata_to_images: bool = Field(False, description="The default save metadata to images to use.")
     save_only_final_enhanced_image: bool = Field(False, description="The default save only final enhanced image to use.")
-    aspect_ratio: SDXL_ASPECT_RATIOS = Field(DEFAULT_PRESET["aspect_ratio"], description="The default aspect ratio to use.")
-    image_number: int = Field(1, description="The default image number to use.", ge=1)
-    
+    aspect_ratio: SDXL_ASPECT_RATIOS = Field(SDXL_ASPECT_RATIOS_CLASS.PORTRAIT.R832_1152, description="The default aspect ratio to use.")
+    image_number: int = Field(1, description="The default amount of images number to use.", ge=1)
+
     steps: int = Field(-1, description="The default steps to use.")
     original_steps: int = False
 
     adaptive_cfg: float = Field(7.0, description="The default cfg tsnr to use.", ge=1.0, le=30.0)
     cfg_scale: float = Field(4.0, description="Higher value means style is cleaner, vivider, and more artistic.", ge=1.0, le=30.0)
     cfg_tsnr: float = Field(7.0, description="The default cfg tsnr to use.")
-    
+
     adm_scaler_end: float = Field(0.3, description="The default adm scaler end to use.", ge=0.0, le=1.0)
     adm_scaler_negative: float = Field(0.8, description="The default adm scaler negative to use.", ge=0.1, le=3.0)
     adm_scaler_positive: float = Field(1.5, description="The default adm scaler positive to use.", ge=0.1, le=3.0)
-    
-    
+
     canny_high_threshold: int = Field(128, description="The default canny high threshold to use.", ge=0, le=255)
     canny_low_threshold: int = Field(64, description="The default canny low threshold to use.", ge=0, le=255)
-    
+
     checkpoint_downloads: dict[str, str] = Field(DEFAULT_PRESET["checkpoint_downloads"], description="The default checkpoint downloads to use.")
     vae_downloads: dict[str, str] = Field({}, description="The default vae downloads to use.")
     lora_downloads: dict[str, str] = Field({}, description="The default lora downloads to use.")
@@ -338,17 +342,16 @@ class _InitialImageGenerationParams(BaseModel):
     controlnet_softness: float = Field(0.25, description="The default controlnet softness to use.", ge=0.0, le=1.0)
     dino_erode_or_dilate: int = 0 # min -64 max 64
 
-    
     enhance_task: Optional[EnhanceMaskCtrls] = None
     freeu_controls: Optional[FreeUControls] = None
     inpaint_options: Optional[InptaintOptions] = None
     controlnet_tasks: Optional[List[BaseControlNetTask]] = None
     overwrite_controls: Optional[OverWriteControls] = None
     developer_options: Optional[DeveloperOptions] = DeveloperOptions()
-    
-    #should_describe_apply_prompts: bool = Field(True, description="The default describe apply prompts checkbox to use.")
+
+    # should_describe_apply_prompts: bool = Field(True, description="The default describe apply prompts checkbox to use.")
     describe_content_type: Optional[List[str]] = Field([DESCRIBE_TYPE_PHOTO], description="The default describe content type to use.")
-    
+
     use_image_input: bool = Field(False, description="Bool: should use image input?")
     use_image_prompt_advanced: bool = Field(False, description="Bool: should use image prompt advanced?")
     use_imageprompt: bool = False
@@ -357,17 +360,15 @@ class _InitialImageGenerationParams(BaseModel):
     mix_image_prompt_and_inpaint: bool = False
 
     image_input_mode: INPUT_IMAGE_MODES = Field("uov", description="The image input mode to use.") # utils.flags.input_image_tab_ids 
-    
+
     input_image: Optional[Dict[Literal["image", "mask"], CustomNDArrayType]] = None
     uov_input_image: Optional[CustomNDArrayType] = None
     input_mask_image: Optional[Dict[Literal["image", "mask"], CustomNDArrayType]] = None
     prepared_input_mask_image: Optional[CustomNDArrayType] = None
     enhance_input_image: Optional[CustomNDArrayType] = None
-    
+
     uov_method: Optional[UPSCALE_OR_VARIATION_MODES] = Field(None, description="The default uov method to use.")
     steps_uov: int = -1
-
-    
 
 
 class TaskletObject(BaseModel):
@@ -470,10 +471,18 @@ class ImageGenerationObject(_InitialImageGenerationParams):
         default_model = self.base_model_name
         from modules.util import get_file_from_folder_list
         vae_approx_filenames = [
-            ('xlvaeapp.pth', 'https://huggingface.co/lllyasviel/misc/resolve/main/xlvaeapp.pth'),
-            ('vaeapp_sd15.pth', 'https://huggingface.co/lllyasviel/misc/resolve/main/vaeapp_sd15.pt'),
-            ('xl-to-v1_interposer-v4.0.safetensors',
-            'https://huggingface.co/mashb1t/misc/resolve/main/xl-to-v1_interposer-v4.0.safetensors')
+                (
+                    'xlvaeapp.pth',
+                    'https://huggingface.co/lllyasviel/misc/resolve/main/xlvaeapp.pth'
+                ),
+                (
+                    'vaeapp_sd15.pth',
+                    'https://huggingface.co/lllyasviel/misc/resolve/main/vaeapp_sd15.pt'
+                ),
+                (
+                    'xl-to-v1_interposer-v4.0.safetensors',
+                    'https://huggingface.co/mashb1t/misc/resolve/main/xl-to-v1_interposer-v4.0.safetensors'
+                )
         ]
 
         for file_name, url in vae_approx_filenames:
@@ -495,7 +504,8 @@ class ImageGenerationObject(_InitialImageGenerationParams):
             log.info('Skipped model download.')
             return default_model, self.checkpoint_downloads
 
-        if not LAUNCH_ARGS.always_download_new_model:
+
+        """ if not LAUNCH_ARGS.always_download_new_model:
             if not os.path.isfile(get_file_from_folder_list(default_model, FolderPathsConfig.path_checkpoints)):
                 for alternative_model_name in self.previous_default_models:
                     if os.path.isfile(get_file_from_folder_list(alternative_model_name, FolderPathsConfig.path_checkpoints)):
@@ -505,7 +515,7 @@ class ImageGenerationObject(_InitialImageGenerationParams):
                         log.info('Use --always-download-new-model to avoid fallback and always get new models.')
                         self.checkpoint_downloads = {}
                         default_model = alternative_model_name
-                        break
+                        break """
 
 
         #for file_name, url in checkpoint_downloads.items():
@@ -523,20 +533,9 @@ class ImageGenerationObject(_InitialImageGenerationParams):
         return default_model, self.checkpoint_downloads
 
 
-
-
-
-
-
-
-    
-
-
 HooocusConfig = ImageGenerationObject(**current_preset)
 DefaultConfigImageGen = ImageGenerationObject(**DEFAULT_PRESET)
 
-
-    
 
 """ 
 with open("hoocus_config.json", "w") as f:
