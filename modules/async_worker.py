@@ -515,18 +515,28 @@ class ImageTaskProcessor:
     def get_task_styles(self, task_prompt, positive_basic_workloads: list, task_rng):
         """Returns the task styles."""
         task_styles = self.generation_task.styles.copy()
+    
         if self.use_styles:
             placeholder_replaced = False
             for j, s in enumerate(task_styles):
-                if s == flags.random_style_name:
-                    s = get_random_style(task_rng)
-                    task_styles[j] = s
-                p, n, style_has_placeholder = apply_style(s, positive=task_prompt)
-                if style_has_placeholder:
-                    placeholder_replaced = True
-                positive_basic_workloads.extend(p)
+                if isinstance(self.generation_task.styles, str):
+                    if s == flags.random_style_name:
+                        s = get_random_style(task_rng)
+                        task_styles[j] = s
+                    p, n, style_has_placeholder = apply_style(s, positive=task_prompt)
+                    if style_has_placeholder:
+                        placeholder_replaced = True
+                    positive_basic_workloads.extend(p)
+                elif isinstance(self.generation_task.styles, dict):
+                    # XXX 20250106
+                    if "prompt" in self.generation_task.styles and "negative_prompt" in self.generation_task.styles and "name" in self.generation_task.styles:
+                        p, n, style_has_placeholder = apply_style(self.generation_task.styles, positive=task_prompt, is_lambda_style=True)
+                    if style_has_placeholder:
+                        positive_basic_workloads.extend(p)
+                        placeholder_replaced = True
             if not placeholder_replaced:
                 positive_basic_workloads.insert(0, task_prompt)
+        
         return task_styles
 
     # OK

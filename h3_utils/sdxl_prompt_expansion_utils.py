@@ -58,8 +58,11 @@ def get_random_style(rng: Random) -> str:
     return rng.choice(list(styles.items()))[0]
 
 
-def apply_style(style, positive):
-    p, n = styles[style]
+def apply_style(style, positive, is_lambda_style=False):
+    if not is_lambda_style:
+        p, n = styles[style]
+    else:
+        name, p, n = style
     return p.replace('{prompt}', positive).splitlines(), n.splitlines(), '{prompt}' in p
 
 

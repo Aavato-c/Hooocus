@@ -269,6 +269,10 @@ class EnhanceMaskCtrls(BaseModel):
     enhance_uov_processing_order: int = Field(ENHANCEMENT_UOV_BEFORE, description="The default enhance uov processing order to use.")
     enhance_uov_prompt_type: int = Field(ENHANCEMENT_UOV_PROMPT_TYPE_ORIGINAL, description="The default enhance uov prompt type to use.")
     
+class LambdaStyle(BaseModel):
+    name: str
+    prompt: str
+    negative_prompt: str
 
 class _InitialImageGenerationParams(BaseModel):
     class Config:
@@ -294,7 +298,7 @@ class _InitialImageGenerationParams(BaseModel):
     refiner_switch: float = Field(DEFAULT_PRESET["refiner_switch"], description="Refiner switch", ge=0.0, le=1.0)
     refiner_swap_method: REFINER_SWAP_METHODS = "joint"
     loras: list = Field(DEFAULT_PRESET["loras"], description="The default LoRAs to use.")
-    styles: List[str] = Field(DEFAULT_PRESET["styles"], description="The default styles to use.")
+    styles: List[str | LambdaStyle] = Field(DEFAULT_PRESET["styles"], description="The default styles to use.")
     
     vae_name: str = Field("Default (model)", description="The default vae to use.")
     
