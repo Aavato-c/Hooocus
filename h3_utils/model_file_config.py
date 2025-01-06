@@ -17,8 +17,10 @@ from pydantic import BaseModel, Field
 
 from modules.model_file_utils.model_loader import load_file_from_url
 from h3_utils.path_configs import FolderPathsConfig
-from h3_utils.flags import PerformanceLoRA
+from h3_utils.flags import CONTROLNET_TASK_TYPES_CLASS, PerformanceLoRA
 
+
+log = LoggingUtil().get_logger()
 
 class _BaseModelFile(BaseModel):
     """A base class for model files
@@ -38,9 +40,10 @@ class _BaseModelFile(BaseModel):
     url_of_model: str = None
     
     def full_path(self):
-        return os.path.join(self.folder_path_of_model, self.name_of_model)
+        return os.path.join(self.folder_path_of_model, self.basename_of_model)
 
     def download_model(self):
+        log.info(f"Downloading {self.name_of_model} from {self.url_of_model}")        
         if not self.folder_path_of_model:
             raise ValueError("model_path_folder is not set.")
 
@@ -50,14 +53,12 @@ class _BaseModelFile(BaseModel):
             model_dir=self.folder_path_of_model,
             file_name=self.basename_of_model
         )
-        return os.path.join(self.folder_path_of_model, self.name_of_model)
+        return os.path.join(self.folder_path_of_model, self.basename_of_model)
 
 
 
 class _BaseControlNetModelFile(_BaseModelFile):
     folder_path_of_model: str = FolderPathsConfig.path_controlnet
-    def full_path(self):
-        return os.path.join(self.model_path_folder, self.model_path_basename)
 
 ImagePromptClipVIsion = _BaseControlNetModelFile(
     name_of_model = "clip_vision_vit_h",
@@ -195,6 +196,7 @@ class BaseControlNetTask(BaseModel):
     ip_unconds: Optional[List[Any]] = None
     stop: float = Field(0.5, ge=0, le=1)
     img: Optional[numpy.ndarray] = None
+    image_url: Optional[str] = None
     weight: float = Field(1.0, ge=0, le=1)
     all_models: Optional[List[_BaseControlNetModelFile]] = None
     name: str = Field(None, description="Name of the ControlNetTask.")
@@ -204,11 +206,14 @@ class BaseControlNetTask(BaseModel):
         if self.models is None:
             return []
         return [model.full_path() for model in self.models]
+    
+
+
 
 class ControlNetTasks:
     ImagePrompt: BaseControlNetTask = BaseControlNetTask(
         stop = 0.5,
-        name = "ImagePrompt",
+        name = CONTROLNET_TASK_TYPES_CLASS.ImagePrompt,
         weight = 0.6,
         img = None,
         all_models = [
@@ -221,7 +226,7 @@ class ControlNetTasks:
     FaceSwap: BaseControlNetTask = BaseControlNetTask(
         stop = 0.9,
         img = None,
-        name = "FaceSwap",
+        name = CONTROLNET_TASK_TYPES_CLASS.IpFace,
         weight = 0.75,
         all_models = [
             ImagePromptClipVIsion,
@@ -233,7 +238,7 @@ class ControlNetTasks:
     PyraCanny: BaseControlNetTask = BaseControlNetTask(
         stop = 0.5,
         img = None,
-        name = "PyraCanny",
+        name = CONTROLNET_TASK_TYPES_CLASS.PyraCanny,
         weight = 1.0,
         all_models = [
             PyraCanny
@@ -244,17 +249,25 @@ class ControlNetTasks:
     CPDS: BaseControlNetTask = BaseControlNetTask(
         stop = 0.5,
         img = None,
-        name = "CPDS",
+        name = CONTROLNET_TASK_TYPES_CLASS.CPDS,
         weight = 1.0,
         all_models = [
             CPDS
         ]
     )
 
-    def by_name(self, name: str, update_with: dict):
-        task_base = getattr(self, name)
-        task_base = task_base.copy(update=update_with)
-        return task_base
+
+def controlnet_task_by_name(name: str, update_with: dict):
+    match name:
+        case CONTROLNET_TASK_TYPES_CLASS.IpFace:
+            name = "FaceSwap"
+        case _:
+            raise ValueError("Invalid task name.")
+        
+    task_base = getattr(ControlNetTasks, name)
+    task_base = task_base.copy(update=update_with)
+    return task_base
+    
 
 UpscaleModel = _BaseModelFile(
     url_of_model="https://huggingface.co/lllyasviel/misc/resolve/main/fooocus_upscaler_s409985e5.bin",

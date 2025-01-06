@@ -29,14 +29,17 @@ import json
 import tempfile
 from typing import Any, Dict, List, Literal, Optional, Tuple, Iterable, TypeAlias, Union
 from enum import Enum
-from h3_utils.model_file_config import BaseControlNetTask
 from pydantic import BaseModel, Field, field_validator
 from numpy.typing import NDArray
 
 from h3_utils.logging_util import LoggingUtil
-from h3_utils.flags import EXAMPLE_ENHANCE_DETECTION_PROMPTS, INPAINT_MASK_CLOTH_CATEGORY, INPUT_IMAGE_MODES, KSAMPLER, OUTPAINT_SELECTIONS, REFINER_SWAP_METHODS, SDXL_ASPECT_RATIOS, UPSCALE_OR_VARIATION_MODES, LatentPreviewMethod, OutputFormat, Performance, ENHANCEMENT_UOV_AFTER, ENHANCEMENT_UOV_BEFORE, ENHANCEMENT_UOV_PROCESSING_ORDER
+from h3_utils.flags import EXAMPLE_ENHANCE_DETECTION_PROMPTS, INPAINT_MASK_CLOTH_CATEGORY, INPUT_IMAGE_MODES, KSAMPLER, OUTPAINT_SELECTIONS, REFINER_SWAP_METHODS, SDXL_ASPECT_RATIOS, UPSCALE_OR_VARIATION_MODES, OutputFormat, Performance, ENHANCEMENT_UOV_BEFORE
+from h3_utils.launch_args import METADATA_SCHEME, LAUNCH_ARGS
+import traceback
 
 log = LoggingUtil().get_logger()
+log.debug("Loading config.py")
+log.debug(f"Traceback: {traceback.format_stack()}")
 
 preset_chosen: str = "default" # Modify this to change the preset
 current_preset = {}
@@ -46,127 +49,19 @@ CustomNDArrayType: TypeAlias = Union[NDArray, List[NDArray]]
 try:
     with open(f"{PARENT_DIR}/presets/default.json", "r") as f:
         DEFAULT_PRESET = json.load(f)
-        log.info("Default preset loaded.")
+        log.debug("Default preset loaded.")
 except FileNotFoundError:
     raise FileNotFoundError("Could not find default preset file. Exiting.")
 
 
 try:
     with open(f"{PARENT_DIR}/presets/{preset_chosen.lower()}.json", "r") as f:
-        log.info(f"Loading preset file for {preset_chosen}.")
+        log.debug(f"Loading preset file for {preset_chosen}.")
         current_preset = json.load(f)
 except FileNotFoundError:
     log.error(f"Could not find preset file for {preset_chosen}. Using default preset.")
     current_preset = DEFAULT_PRESET
 
-class GlobalEnv:
-    # NB! Do not store any sensitive information here. Use normal .env files for that.
-
-    PYTHONFAULTHANDLER=1
-
-    # launch.py
-    TRY_INSTALL_XFORMERS = False
-
-    PYTORCH_ENABLE_MPS_FALLBACK = 1
-    PYTORCH_MPS_HIGH_WATERMARK_RATIO = 0.0
-
-    def __init__(self, **data):
-        # Set the environment variables globally
-        super().__init__(**data)
-        for _key, value in data.items():
-            os.environ[_key] = str(value)
-
-
-HOOOCUS_VERSION = '0.5.1'
-METADATA_SCHEME = "Hooocus"
-
-PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
-
-class _LAUNCH_ARGS(BaseModel):
-    # Modify the initial values here
-    class Config:
-        arbitrary_types_allowed = True
-
-   
-    # General args
-    enable_auto_describe_image: bool = Field(False, description="Enables automatic description of uov and enhance image when prompt is empty.")
-    preview_option: LatentPreviewMethod = LatentPreviewMethod.Auto
-    wildcards_max_bfs_depth: int = 64
-    disable_image_log: bool = Field(False, description="Prevent writing images and logs to the outputs folder.")
-    disable_analytics: bool = Field(False, description="Disables analytics for Gradio.")
-    disable_metadata: bool = Field(False, description="Disables saving metadata to images.")
-    disable_preset_download: bool = Field(False, description="Disables downloading models for presets.")
-    disable_enhance_output_sorting: bool = Field(False, description="Disables enhance output sorting for final image gallery.")
-    always_download_new_model: bool = Field(False, description="Always download newer models.")
-    rebuild_hash_cache: bool = Field(False, description="Generates missing model and LoRA hashes.")
-    temp_path_cleanup_on_launch: bool = Field(True, description="The temp path cleanup on launch to use.")
-    
-
-    
-    # Etc
-    web_upload_size: float = 100.0
-    hf_mirror: str = "https://huggingface.co"
-    external_working_path: str = None
-    temp_path: str = None
-    cache_path: str = None
-    in_browser: bool = False
-    disable_in_browser: bool = False
-
-    # Global imagegen
-    min_seed: int = 0
-    max_seed: int = 2**63 - 1
-    black_out_nsfw: bool = False
-    disable_attention_upcast: bool = False
-    gpu_device_id: Optional[int] = None
-    output_path: str = None
-    directml: bool = False
-    disable_ipex_hijack: bool = False
-    disable_xformers: bool = False
-    pytorch_deterministic: bool = False
-    
-
-    # CMD args
-    async_cuda_allocation: bool = False
-    disable_async_cuda_allocation: bool = False
-
-    # Model args
-    all_in_fp32: bool = False
-    all_in_fp16: bool = False
-
-    # Unet args
-    unet_in_bf16: bool = False
-    unet_in_fp16: bool = False
-    unet_in_fp8_e4m3fn: bool = False
-    unet_in_fp8_e5m2: bool = False
-
-    # VAE args
-    vae_in_fp16: bool = False
-    vae_in_fp32: bool = False
-    vae_in_bf16: bool = False
-    vae_in_cpu: bool = False
-
-    # FPTEArgs
-    clip_in_fp8_e4m3fn: bool = False
-    clip_in_fp8_e5m2: bool = False
-    clip_in_fp16: bool = False
-    clip_in_fp32: bool = False
-
-    # AttentionArgs
-    attention_split: bool = False
-    attention_quad: bool = False
-    attention_pytorch: bool = False
-
-    # VramArgs
-    always_cpu: bool = False
-    always_gpu: bool = True
-    always_high_vram: bool = True
-    always_normal_vram: bool = False
-    always_low_vram: bool = False
-    always_no_vram: bool = False
-    always_offload_from_vram: bool = False
-
-
-LAUNCH_ARGS = _LAUNCH_ARGS()
 
 class FilePathConfig:
     config_path = 'h3_utils/config.json'
@@ -237,7 +132,6 @@ class InptaintOptions(BaseModel):
     inpaint_stop_ats: List[float] = Field([0.5, 0.5, 0.5, 0.5], description="The default inpaint stop ats to use.")
     inpaint_strength: float = 1.0 # min 0.0 max 1.0
 
-
 class EnhanceMaskCtrls(BaseModel):
     """
     Enhacement mask controls for inpaint and outpaint
@@ -278,6 +172,22 @@ class LambdaStyle(BaseModel):
     name: str
     prompt: str
     negative_prompt: str
+
+
+class BaseControlNetTaskForRequests(BaseModel):
+
+    stop: float = Field(0.5, ge=0, le=1)
+    img: Optional[Any] = None
+    image_url: Optional[str] = None
+    weight: float = Field(1.0, ge=0, le=1)
+    name: str = Field(None, description="Name of the ControlNetTask.")
+    
+    # Not used in requests
+    ip_conds: Optional[Any] = None
+    ip_unconds: Optional[Any] = None
+    all_models: Optional[List[dict | object]] = None
+    paths_of_models: Optional[List[str]] = None
+
 
 class _InitialImageGenerationParams(BaseModel):
     class Config:
@@ -351,14 +261,13 @@ class _InitialImageGenerationParams(BaseModel):
     enhance_task: Optional[EnhanceMaskCtrls] = None
     freeu_controls: Optional[FreeUControls] = None
     inpaint_options: Optional[InptaintOptions] = None
-    controlnet_tasks: Optional[List[BaseControlNetTask]] = None
+    controlnet_tasks: Optional[List[BaseControlNetTaskForRequests]] = None
     overwrite_controls: Optional[OverWriteControls] = None
     developer_options: Optional[DeveloperOptions] = DeveloperOptions()
 
     # should_describe_apply_prompts: bool = Field(True, description="The default describe apply prompts checkbox to use.")
     describe_content_type: Optional[List[str]] = Field([DESCRIBE_TYPE_PHOTO], description="The default describe content type to use.")
 
-    use_image_input: bool = Field(False, description="Bool: should use image input?")
     use_image_prompt_advanced: bool = Field(False, description="Bool: should use image prompt advanced?")
     use_imageprompt: bool = False
     use_upscale_or_vary: bool = False
@@ -368,6 +277,7 @@ class _InitialImageGenerationParams(BaseModel):
     image_input_mode: INPUT_IMAGE_MODES = Field("uov", description="The image input mode to use.") # utils.flags.input_image_tab_ids 
 
     input_image: Optional[Dict[Literal["image", "mask"], CustomNDArrayType]] = None
+    input_image_url: Optional[str] = None
     uov_input_image: Optional[CustomNDArrayType] = None
     input_mask_image: Optional[Dict[Literal["image", "mask"], CustomNDArrayType]] = None
     prepared_input_mask_image: Optional[CustomNDArrayType] = None
@@ -461,12 +371,8 @@ class ImageGenerationObject(_InitialImageGenerationParams):
 
 
 
-    def _prepare_controlnet_model_downloads(self):
-        if self.controlnet_tasks is None:
-            return
-        for task in self.controlnet_tasks:
-            for model in task.all_models:
-                model.download_model()
+
+        
                 
 
 
@@ -476,6 +382,7 @@ class ImageGenerationObject(_InitialImageGenerationParams):
     def download_models(self):
         default_model = self.base_model_name
         from modules.util import get_file_from_folder_list
+
         vae_approx_filenames = [
                 (
                     'xlvaeapp.pth',
