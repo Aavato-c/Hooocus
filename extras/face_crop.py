@@ -29,7 +29,7 @@ def crop_image(img_rgb):
         from extras.facexlib.utils.face_restoration_helper import FaceRestoreHelper
         faceRestoreHelper = FaceRestoreHelper(
             upscale_factor=1,
-            model_rootpath=h3_utils.config.path_controlnet,
+            model_rootpath=h3_utils.path_configs.FolderPathsConfig.path_controlnet,
             device='cpu'  # use cpu is safer since we are out of memory management
         )
 
