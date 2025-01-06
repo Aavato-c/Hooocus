@@ -11,7 +11,7 @@ import torch
 import importlib.util
 import sys
 
-from h3_utils.config import LAUNCH_ARGS
+from h3_utils.launch_args import LAUNCH_ARGS
 from h3_utils.logging_util import LoggingUtil
 
 log = LoggingUtil("model_management").get_logger()
