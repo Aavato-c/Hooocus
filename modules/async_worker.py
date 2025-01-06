@@ -3,8 +3,10 @@
 from asyncio import tasks
 import copy
 import datetime
+from operator import is_
 import os
 import random
+import re
 import sys
 import threading
 import traceback
@@ -19,8 +21,9 @@ import time
 from torch import Tensor, tensor
 import torch
 
-from h3_utils import logging_util
+from h3_utils.filesystem_utils import download_image_from_url
 from h3_utils.path_configs import FolderPathsConfig
+from ldm_patched.modules.clip_vision import ClipVisionModel
 from modules.imagen_utils.imagen_patch_utils.patch import patch_all
 from unavoided_globals import unavoided_global_vars
 from extras import face_crop, preprocessors
@@ -31,6 +34,7 @@ from modules.imagen_utils.upscale.upscaler import perform_upscale
 from unavoided_globals.unavoided_global_vars import PatchSettings
 from unavoided_globals.global_model_management import global_model_management
 from h3_utils.model_file_config import (
+    BaseControlNetTask,
     PyraCanny,
     CPDS,
     ImagePromptAdapterFace,
@@ -55,7 +59,7 @@ import h3_utils.config as config
 import h3_utils.flags as flags
 from h3_utils.logging_util import LoggingUtil
 from h3_utils.sdxl_prompt_expansion_utils import apply_arrays, apply_style, fooocus_expansion, get_random_style
-from h3_utils.flags import LORA_FILENAMES, Overrides, Performance, Steps
+from h3_utils.flags import CONTROLNET_TASK_TYPES_CLASS, LORA_FILENAMES, Overrides, Performance, Steps
 
 import extras.ip_adapter as ip_adapter
 
@@ -163,7 +167,6 @@ class ImageTaskProcessor:
 
     def initialize_current_task(self, new_task: config.ImageGenerationObject = None):
         new_task._prepare_downloads()
-        new_task._prepare_controlnet_model_downloads()
         new_task.download_models()
         self.generation_task = new_task
         self.patch_settings = PatchSettings()
@@ -192,15 +195,15 @@ class ImageTaskProcessor:
         self.extra_negative_prompts: List[str] = []
         self.base_model_additional_loras: List[str] = []
 
-        self.controlnet_pyracanny_path: Optional[str] = None
-        self.controlnet_cpds_path: Optional[str] = None
-        self.clip_vision_path: Optional[str] = None
-        self.ip_negative_path: Optional[str] = None
-        self.ip_adapter_path: Optional[str] = None
-        self.ip_adapter_face_path: Optional[str] = None
-        self.inpaint_head_model_path: Optional[str] = None
-        self.inpaint_patch_model_path: Optional[str] = None
-        self.upscale_model_path: Optional[str] = None
+        self.controlnet_pyracanny_path: Optional[str] = PyraCanny.full_path()
+        self.controlnet_cpds_path: Optional[str] = CPDS.full_path()
+        self.clip_vision_path: Optional[str] = ImagePromptClipVIsion.full_path()
+        self.ip_negative_path: Optional[str] = ImagePromptAdapterNegative.full_path()
+        self.ip_adapter_path: Optional[str] = ImagePromptAdapterPlus.full_path()
+        self.ip_adapter_face_path: Optional[str] = ImagePromptAdapterFace.full_path()
+        self.inpaint_head_model_path: Optional[str] = InpaintModelFiles.InpaintHead.full_path()
+        self.inpaint_patch_model_path: Optional[str] = InpaintModelFiles.InpaintPatchV26.full_path()
+        self.upscale_model_path: Optional[str] = UpscaleModel.full_path()
 
         self.final_scheduler_name: Optional[str] = None
 
@@ -214,7 +217,6 @@ class ImageTaskProcessor:
         self.check_refiner_not_same_as_base_model()
         self.get_defaults_per_performance()
         self.prepare_attributes()
-        self.update_controlnet_models()
 
 
     def yield_result(self, imgs: list, do_not_show_finished_images=False):
@@ -283,12 +285,11 @@ class ImageTaskProcessor:
                 raise EarlyReturnException()
             
 
-        if 'cn' in _self.goals:
-            prepared_task.encoded_positive_cond, 
-            prepared_task.encoded_negative_cond = \
-                _self.get_conditions_from_input_img_controlnet(
-                prepared_task.encoded_positive_cond, 
-                prepared_task.encoded_negative_cond)
+        if len(_self.generation_task.controlnet_tasks) > 0:
+            _encoded_positive_cond, _encoded_negative_cond = _self.get_conditions_from_input_img_controlnet(prepared_task.encoded_positive_cond, prepared_task.encoded_negative_cond)
+            prepared_task.encoded_positive_cond = _encoded_positive_cond
+            prepared_task.encoded_negative_cond = _encoded_negative_cond
+        
 
         #memory_usage = torch.cuda.memory_allocated() / 1024 / 1024
         imgs = _self.pipeline.process_diffusion(
@@ -386,7 +387,7 @@ class ImageTaskProcessor:
     def get_conditions_from_input_img_controlnet(self, positive_cond, negative_cond):
         if self.generation_task.controlnet_tasks:
             for controlnet_task in self.generation_task.controlnet_tasks:
-                if controlnet_task.name [ControlNetTasks.CPDS.name, ControlNetTasks.PyraCanny.name]:
+                if controlnet_task.name in [ControlNetTasks.CPDS.name, ControlNetTasks.PyraCanny.name]:
                     positive_cond, negative_cond = apply_controlnet(
                         positive_cond,
                         negative_cond,
@@ -476,8 +477,8 @@ class ImageTaskProcessor:
                                                task_extra_negative_prompts, uid))
         if self.use_prompt_expansion:
             tasks = self.expand_prompts(tasks)
-        self.encode_prompts(tasks)
-        self.tasks = tasks
+        encoded_tasks = self.encode_prompts(tasks)
+        self.tasks = encoded_tasks
         return True
 
     # OK
@@ -596,6 +597,9 @@ class ImageTaskProcessor:
                 task.encoded_negative_cond = self.pipeline.clip_encode(texts=task.negative_basic_workloads, pool_top_k=task.negative_top_k)
             i += 1
 
+        ...
+        return tasks
+
     # TODO? This one could be async, using its own pid etc to patch
     # OK
     def process_all_tasks(self):
@@ -623,7 +627,39 @@ class ImageTaskProcessor:
             except Exception as e:
                 raise e
 
-            
+    def prepare_controlnet_models(self):
+        ImagePromptClipVIsion.download_model()
+        ImagePromptAdapterNegative.download_model()
+
+        is_ip = False
+        is_face = False
+        is_pyracanny = False
+        is_cpds = False
+        for controlnet_task in self.generation_task.controlnet_tasks:
+            match controlnet_task.name:
+                case ControlNetTasks.ImagePrompt.name:
+                    is_ip = True
+                case ControlNetTasks.FaceSwap.name:
+                    is_face = True
+                case ControlNetTasks.PyraCanny.name:
+                    is_pyracanny = True
+                case ControlNetTasks.CPDS.name:
+                    is_cpds = True
+
+        if is_ip:
+            ImagePromptAdapterPlus.download_model()
+            self.ip_adapter.load_ip_adapter(self.clip_vision_path, self.ip_negative_path, self.ip_adapter_path)
+        if is_face:
+            ImagePromptAdapterFace.download_model()
+            self.ip_adapter.load_ip_adapter(self.clip_vision_path, self.ip_negative_path, self.ip_adapter_face_path)
+        if is_pyracanny:
+            PyraCanny.download_model()
+            self.pipeline.refresh_controlnets([self.controlnet_pyracanny_path])
+        if is_cpds:
+            CPDS.download_model()
+            self.pipeline.refresh_controlnets([self.controlnet_cpds_path])        
+
+        return True
 
     # OK
     def prepare_task_for_processing(self, task: config.ImageGenerationObject):
@@ -631,13 +667,23 @@ class ImageTaskProcessor:
         self.preparation_start_time = time.perf_counter()
         self.initialize_current_task(task)
 
-        apply_patch_settings(self.pid, task)
-        if task.input_image:
-             self.prepare_image_inputs()
+        if len(self.generation_task.controlnet_tasks) > 0:
+            cn_tasks_validated = []
+            for controlnet_task in self.generation_task.controlnet_tasks:
+                cn_tasks_validated.append(BaseControlNetTask(**controlnet_task))
+            self.generation_task.controlnet_tasks = cn_tasks_validated
+        
 
-        self.pipeline.refresh_controlnets([self.controlnet_pyracanny_path, self.controlnet_cpds_path])
-        self.ip_adapter.load_ip_adapter(self.clip_vision_path, self.ip_negative_path, self.ip_adapter_path)
-        self.ip_adapter.load_ip_adapter(self.clip_vision_path, self.ip_negative_path, self.ip_adapter_face_path)
+        self.prepare_image_inputs()
+        
+
+
+
+
+        self.prepare_controlnet_models()
+        
+        apply_patch_settings(self.pid, task)
+
 
         overrides: config.Overrides = self.get_overrides(task.steps, task.height, task.width)
 
@@ -686,7 +732,7 @@ class ImageTaskProcessor:
              height, 
              current_progress) = apply_inpaint() """
 
-        if 'cn' in self.goals:
+        if len(self.generation_task.controlnet_tasks) > 0:
             self.apply_control_nets()
             if task.developer_options.debugging_cn_preprocessor:
                 return
@@ -816,15 +862,22 @@ class ImageTaskProcessor:
 
     
 
-    # OK
+    # TODO
     def prepare_image_inputs(self):
         ip_mode = self.generation_task.image_input_mode
         inpaint_options = self.generation_task.inpaint_options
         task: config.ImageGenerationObject = self.generation_task
 
+        if task.input_image == None and task.input_image_url != None:
+            task.input_image = download_image_from_url(task.input_image_url)
+
+        if len(task.controlnet_tasks) > 0:
+            for controlnet_task in task.controlnet_tasks:
+                if controlnet_task.image_url != None:
+                    controlnet_task.img = download_image_from_url(controlnet_task.image_url)
+
         # TODO Move to it's own object, setup funcs
-        if ip_mode == flags.INPUT_IMAGE_MODES_CLASS.uov or ip_mode == flags.INPUT_IMAGE_MODES_CLASS.ip \
-        and task.mix_image_prompt_and_vary_upscale:            
+        if ip_mode == flags.INPUT_IMAGE_MODES_CLASS.uov or (ip_mode == flags.INPUT_IMAGE_MODES_CLASS.ip and task.mix_image_prompt_and_vary_upscale == True):            
 
             self.prepare_upscale() # TODO
 
@@ -833,8 +886,7 @@ class ImageTaskProcessor:
 
             _inpaint_mask = task.input_image['mask'][:,:, 0]
 
-        if ip_mode == flags.INPUT_IMAGE_MODES_CLASS.inpaint or \
-            ip_mode == flags.INPUT_IMAGE_MODES_CLASS.ip and task.mix_image_prompt_and_inpaint:
+        if ip_mode == flags.INPUT_IMAGE_MODES_CLASS.inpaint or (ip_mode == flags.INPUT_IMAGE_MODES_CLASS.ip and task.mix_image_prompt_and_inpaint):
 
             if inpaint_options.use_advanced_inpaint_masking:
                 _prepared_input_mask_image = np.maximum(
@@ -884,12 +936,6 @@ class ImageTaskProcessor:
                         self.generation_task.prompt = inpaint_options.inpaint_additional_prompt + '\n' + self.generation_task.prompt
                 self.goals.append('inpaint')
 
-        if self.generation_task.image_input_mode == flags.INPUT_IMAGE_MODES_CLASS.ip or \
-                self.generation_task.mix_image_prompt_and_vary_upscale or \
-                self.generation_task.mix_image_prompt_and_inpaint:
-            self.goals.append('cn')
-            logger.info('Downloading control models ...')
-            self.update_controlnet_models()
 
         if self.generation_task.image_input_mode == 'enhance' and self.generation_task.enhance_input_image:
             logger.info('Getting input image for enhancement ...')
@@ -1017,21 +1063,6 @@ class ImageTaskProcessor:
         task.aspect_ratio = [int(x) for x in task.aspect_ratio]
 
         task.width, task.height = task.aspect_ratio
-    # OK
-    def update_controlnet_models(self):
-        task: config.ImageGenerationObject = self.generation_task
-        if task.controlnet_tasks:
-            for controlnet_task in task.controlnet_tasks:
-                controlnet_task = ControlNetTasks.by_name(controlnet_task.name, update_with=controlnet_task)
-                logger.info(f'Downloading controlnet model for {controlnet_task.name} ...')
-                for model in controlnet_task.models:
-                    model.download_model()
-                    self.controlnet_pyracanny_path = PyraCanny.full_path()
-                    self.controlnet_cpds_path = CPDS.full_path()
-                    self.clip_vision_path = ImagePromptClipVIsion.full_path()
-                    self.ip_negative_path = ImagePromptAdapterNegative.full_path()
-                    self.ip_adapter_path = ImagePromptAdapterPlus.full_path()
-                    self.ip_adapter_face_path = ImagePromptAdapterFace.full_path()
 
     def apply_vary(self):
         task: config.ImageGenerationObject = self.generation_task
@@ -1152,70 +1183,75 @@ class ImageTaskProcessor:
         task: config.ImageGenerationObject = self.generation_task
         debug_cn = task.developer_options.debugging_cn_preprocessor
         skip_cn = task.developer_options.skipping_cn_preprocessor
-        for cn_task in [_cn_task for _cn_task in task.controlnet_tasks if _cn_task.name.lower() == 'pyracanny']:
-            cn_img = resize_image(
-                ensure_three_channels(cn_task.img), width=task.width, height=task.height
-            )
+        ready_tasks = []
+        for cn_task in task.controlnet_tasks:
+            match cn_task.name:
+                case CONTROLNET_TASK_TYPES_CLASS.PyraCanny:
+                    cn_img = resize_image(
+                        ensure_three_channels(cn_task.img), width=task.width, height=task.height
+                    )
 
-            if not skip_cn:
-                cn_img = preprocessors.canny_pyramid(
-                    cn_img,
-                    task.canny_low_threshold,
-                    task.canny_high_threshold)
+                    if not skip_cn:
+                        cn_img = preprocessors.canny_pyramid(
+                            cn_img,
+                            task.canny_low_threshold,
+                            task.canny_high_threshold)
 
-            cn_img = ensure_three_channels(cn_img)
-            cn_task.img = numpy_to_pytorch(cn_img)
-            if task.developer_options.debugging_cn_preprocessor:
-                self.yield_result(cn_img, do_not_show_finished_images=True)
+                    cn_img = ensure_three_channels(cn_img)
+                    cn_task.img = numpy_to_pytorch(cn_img)
+                    ready_tasks.append(cn_task)
 
-        for cn_task in [_cn_task for _cn_task in task.controlnet_tasks if _cn_task.name.lower() == 'cpds']:
-            cn_img = resize_image(ensure_three_channels(cn_task.img), width=task.width, height=task.height)
+                case CONTROLNET_TASK_TYPES_CLASS.CPDS:
+                    cn_img = resize_image(ensure_three_channels(cn_task.img), width=task.width, height=task.height)
 
-            if not skip_cn:
-                cn_img = preprocessors.cpds(cn_img)
+                    if not skip_cn:
+                        cn_img = preprocessors.cpds(cn_img)
 
-            cn_img = ensure_three_channels(cn_img)
-            cn_task.img = numpy_to_pytorch(cn_img)
+                    cn_img = ensure_three_channels(cn_img)
+                    cn_task.img = numpy_to_pytorch(cn_img)
+                    ready_tasks.append(cn_task)
 
-            if debug_cn:
-                self.update_progress('ControlNet: CPDS')
-                self.yield_result(cn_img, do_not_show_finished_images=True)
-        for cn_task_ip in [cn_task for cn_task in task.controlnet_tasks if cn_task.name.lower() == 'ip']:
-            cn_img = ensure_three_channels(cn_task_ip.img)
+                case CONTROLNET_TASK_TYPES_CLASS.ImagePrompt:
+                    # Todo handle these goal appends better
+                    self.goals.append('cn')
+                    cn_img = ensure_three_channels(cn_task.img)
 
-            # https://github.com/tencent-ailab/IP-Adapter/blob/d580c50a291566bbf9fc7ac0f760506607297e6d/README.md?plain=1#L75
-            cn_img = resize_image(cn_img, width=224, height=224, resize_mode=0)
+                    # https://github.com/tencent-ailab/IP-Adapter/blob/d580c50a291566bbf9fc7ac0f760506607297e6d/README.md?plain=1#L75
+                    cn_img = resize_image(cn_img, width=224, height=224, resize_mode=0)
 
-            cn_task.ip_conds, cn_task.ip_unconds = self.ip_adapter.preprocess(cn_img, ip_adapter_path=self.ip_adapter_path)
-            if debug_cn:
-                self.update_progress('ControlNet: IP')
-                self.yield_result(cn_img, do_not_show_finished_images=True)
+                    cn_task.img = self.ip_adapter.preprocess(cn_img, ip_adapter_path=self.ip_adapter_path)
+                    ready_tasks.append(cn_task)
 
-        for cn_task in [cn_task for cn_task in task.controlnet_tasks if cn_task.name.lower() == 'ip_face']:
-            cn_img = ensure_three_channels(cn_task.img)
+                case CONTROLNET_TASK_TYPES_CLASS.IpFace:
+                    cn_img = ensure_three_channels(cn_task.img)
 
-            if not skip_cn:
-                cn_img = face_crop.crop_image(cn_img)
+                    if not skip_cn:
+                        cn_img = face_crop.crop_image(cn_img)
 
-            # https://github.com/tencent-ailab/IP-Adapter/blob/d580c50a291566bbf9fc7ac0f760506607297e6d/README.md?plain=1#L75
-            cn_img = resize_image(cn_img, width=224, height=224, resize_mode=0)
+                    # https://github.com/tencent-ailab/IP-Adapter/blob/d580c50a291566bbf9fc7ac0f760506607297e6d/README.md?plain=1#L75
+                    cn_img = resize_image(cn_img, width=224, height=224, resize_mode=0)
 
-            cn_task.ip_conds, cn_task.ip_unconds = self.ip_adapter.preprocess(cn_img, ip_adapter_path=self.ip_adapter_face_path)
+                    cn_task.img = self.ip_adapter.preprocess(cn_img, ip_adapter_path=self.ip_adapter_face_path)
+                    ready_tasks.append(cn_task)
 
-            if debug_cn:
-                self.yield_result(cn_img, do_not_show_finished_images=True)
+                case _:
+                    raise ValueError(f"Controlnet task {cn_task.name} not implemented yet.")
+
 
         # Image prompt and image prompt face
+        task.controlnet_tasks = ready_tasks
+        
         all_ip_tasks = [
-            cn_task for cn_task in task.controlnet_tasks if cn_task.name.lower() == "ip"
-        ] + [
-            cn_task
-            for cn_task in task.controlnet_tasks
-            if cn_task.name.lower() == "ip_face"
-        ]
+            cn_task for cn_task in task.controlnet_tasks if cn_task.name.lower() == CONTROLNET_TASK_TYPES_CLASS.ImagePrompt
+        ] + [cn_task for cn_task in task.controlnet_tasks if cn_task.name.lower() == CONTROLNET_TASK_TYPES_CLASS.IpFace]
         
         if len(all_ip_tasks) > 0:
             self.pipeline.final_unet = ip_adapter.patch_model(self.pipeline.final_unet, all_ip_tasks)
+        
+        if self.generation_task.controlnet_tasks != ready_tasks:
+            raise ValueError("Controlnet tasks not equal to ready tasks.")
+        
+        return True
     
     # OK
     def patch_samplers(self):
