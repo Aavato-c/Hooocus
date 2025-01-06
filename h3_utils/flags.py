@@ -98,7 +98,14 @@ OUTPAINT_SELECTIONS = Literal['Left', 'Right', 'Top', 'Bottom']
 
 REFINER_SWAP_METHODS = Literal['joint', 'separate', 'vae']
 
-CONTROLNET_TASK_TYPES = Literal["ImagePrompt", "FaceSwap", "PyraCanny", "CPDS"]    
+CONTROLNET_TASK_TYPES = Literal["ImagePrompt", "ip_face", "PyraCanny", "CPDS"]
+
+class CONTROLNET_TASK_TYPES_CLASS:
+    ImagePrompt = "ImagePrompt"
+    IpFace = "ip_face"
+    PyraCanny = "PyraCanny"
+    CPDS = "CPDS"
+
 
 EXAMPLE_ENHANCE_DETECTION_PROMPTS = [
         'face', 'eye', 'mouth', 'hair', 'hand', 'body'
