@@ -187,7 +187,6 @@ class ImageTaskProcessor:
         self.skip_prompt_processing = False
         self.use_synthetic_refiner = False
         self.use_prompt_expansion = False
-        self.use_styles = False
 
         self.extra_positive_prompts: List[str] = []
         self.extra_negative_prompts: List[str] = []
@@ -460,6 +459,7 @@ class ImageTaskProcessor:
         """Creates tasks for image generation."""
         tasks = []
         logger.debug(f"Creating tasks ...")
+        self.generation_task.init_style_lambdas()   
         for i in range(self.generation_task.image_number):
             uid = self.generation_task.uid
             task_seed, task_rng = self.get_task_seed_and_rng(i)
@@ -516,7 +516,7 @@ class ImageTaskProcessor:
         """Returns the task styles."""
         task_styles = self.generation_task.styles.copy()
     
-        if self.use_styles:
+        if len(task_styles) > 0:
             placeholder_replaced = False
             for j, s in enumerate(task_styles):
                 if isinstance(self.generation_task.styles, str):
@@ -1012,7 +1012,6 @@ class ImageTaskProcessor:
         if fooocus_expansion in task.styles:
             self.use_prompt_expansion = True 
             task.styles.remove(fooocus_expansion)
-        self.use_styles = len(task.styles) > 0
 
         task.aspect_ratio = task.aspect_ratio.split('*')
         task.aspect_ratio = [int(x) for x in task.aspect_ratio]
@@ -1023,6 +1022,7 @@ class ImageTaskProcessor:
         task: config.ImageGenerationObject = self.generation_task
         if task.controlnet_tasks:
             for controlnet_task in task.controlnet_tasks:
+                controlnet_task = ControlNetTasks.by_name(controlnet_task.name, update_with=controlnet_task)
                 logger.info(f'Downloading controlnet model for {controlnet_task.name} ...')
                 for model in controlnet_task.models:
                     model.download_model()

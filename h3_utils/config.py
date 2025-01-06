@@ -435,7 +435,9 @@ class ImageGenerationObject(_InitialImageGenerationParams):
         arbitrary_types_allowed = True
         from_attributes = True
 
-
+    def init_style_lambdas(self):
+        if len(self.additional_style_lamdas) > 0:
+            self.styles.extend(self.additional_style_lamdas)
 
     def _prepare_downloads(self):
         self.checkpoint_downloads = self.checkpoint_downloads or DEFAULT_PRESET["checkpoint_downloads"]
