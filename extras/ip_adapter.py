@@ -263,8 +263,7 @@ def patch_model(model: ModelPatcher, tasks: List[BaseControlNetTask]):
             b, _, _ = q.shape
 
             for cn_task in tasks:
-                cs = cn_task.ip_conds
-                ucs = cn_task.ip_unconds
+                (cs, ucs) = cn_task.img
                 cn_stop = cn_task.stop
                 cn_weight = cn_task.weight
                 if current_step < cn_stop:
@@ -273,12 +272,8 @@ def patch_model(model: ModelPatcher, tasks: List[BaseControlNetTask]):
                     ip_k_uc = ucs[ip_index * 2].to(q)
                     ip_v_uc = ucs[ip_index * 2 + 1].to(q)
 
-                    ip_k = torch.cat(
-                        [(ip_k_c, ip_k_uc)[i] for i in cond_or_uncond], dim=0
-                    )
-                    ip_v = torch.cat(
-                        [(ip_v_c, ip_v_uc)[i] for i in cond_or_uncond], dim=0
-                    )
+                    ip_k = torch.cat([(ip_k_c, ip_k_uc)[i] for i in cond_or_uncond], dim=0)
+                    ip_v = torch.cat([(ip_v_c, ip_v_uc)[i] for i in cond_or_uncond], dim=0)
 
                     # Midjourney's attention formulation of image prompt (non-official reimplementation)
                     # Written by Lvmin Zhang at Stanford University, 2023 Dec
@@ -305,8 +300,8 @@ def patch_model(model: ModelPatcher, tasks: List[BaseControlNetTask]):
             v = torch.cat(v, dim=1)
             out = _sdp(q, k, v, extra_options)
 
-            return out.to(dtype=org_dtype)
 
+            return out.to(dtype=org_dtype)
         return patcher
 
     def set_model_patch_replace(model, number, key):
