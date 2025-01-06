@@ -55,13 +55,6 @@ Authorization: Bearer TOKEN HERE
     "vae_name": "Default (model)",
     "performance_selection": "Speed",
     "performance_loras": [],
-    "previous_default_models": [
-        "juggernautXL_version8Rundiffusion.safetensors",
-        "juggernautXL_version7Rundiffusion.safetensors",
-        "juggernautXL_v7Rundiffusion.safetensors",
-        "juggernautXL_version6Rundiffusion.safetensors",
-        "juggernautXL_v6Rundiffusion.safetensors"
-    ],
     "output_format": "webp",
     "save_metadata_to_images": false,
     "save_only_final_enhanced_image": false,
