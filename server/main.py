@@ -3,7 +3,7 @@ import sys
 from typing import Annotated
 from uuid import uuid4
 import uvicorn
-
+from pprint import pprint as pp
 
 ROOT_DIR = os.path.abspath(__file__).split("server")[0]
 sys.path.append(ROOT_DIR)

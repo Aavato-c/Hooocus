@@ -1,6 +1,12 @@
 import os
 import sys
+
+from h3_utils.model_file_config import controlnet_task_by_name
+
+
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 from pydantic_core import from_json
 from torch import Tensor

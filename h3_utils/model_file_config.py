@@ -2,9 +2,12 @@ import os
 import sys
 import numpy
 
+
 ROOT_DIR = os.path.abspath(__file__).split("h3_utils")[0]
 sys.path.append(ROOT_DIR)
 
+from h3_utils.logging_util import LoggingUtil
+from ldm_patched.controlnet.cldm import ControlNet
 
 from enum import Enum
 

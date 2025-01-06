@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import h3_utils.config
+import h3_utils.path_configs
 
 
 faceRestoreHelper = None
