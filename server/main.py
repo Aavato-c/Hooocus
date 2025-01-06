@@ -123,4 +123,4 @@ def main_entry(process_uuid = None, max_processes = 4):
 
 if __name__ == "__main__":
     app = main_entry("RANDOM_UUID")
-    uvicorn.run(app, port=8111)
+    uvicorn.run(app, port=8111) # uvicorn server.main:app --reload --port 8111
