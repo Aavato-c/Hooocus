@@ -356,6 +356,36 @@ class ImageGenerationObject(_InitialImageGenerationParams):
         if len(self.additional_style_lamdas) > 0:
             self.styles.extend(self.additional_style_lamdas)
 
+    def save_log(self):
+        while os.path.exists(f"{PARENT_DIR}/logs/imagen_logs/{self.uid}.json"):
+            self.uid = f"{self.uid}_1"
+        
+        try:
+            with open(f"{PARENT_DIR}/logs/imagen_logs/{self.uid}.json", "w") as f:
+                self.performance_selection = self.performance_selection.name
+                json_model = self.model_dump()
+                json.dump(json_model, f, indent=4, ensure_ascii=False)
+        except Exception as e:
+            if "serialization" in str(e):
+                log.error("Could not serialize model.")
+
+                for key, value in self.dict().items():
+                    try:
+                        json.dumps({key: value})
+                    except Exception as e:
+                        log.error(f"Could not serialize {key} with value {value}.")
+                        # Delete the key
+                        self.__delattr__(key)
+                try:
+                    self.save_log()
+                except Exception as e:
+                    log.error("Could not save log.")
+            else:
+                log.error(f"Could not save log: {e}")
+
+
+            
+
     def _prepare_downloads(self):
         self.checkpoint_downloads = self.checkpoint_downloads or DEFAULT_PRESET["checkpoint_downloads"]
         self.embeddings_downloads = self.embeddings_downloads or DEFAULT_PRESET["embeddings_downloads"]
