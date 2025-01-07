@@ -7,6 +7,7 @@ import cv2
 from numpy import ndarray
 from db import crud
 from db.database import get_db, get_db_unmanaged
+from db.models.pydantic_m import GenerationStates
 from h3_utils.flags import Performance
 from modules.async_worker import ImageTaskProcessor
 from unavoided_globals.img_processor_globlal import create_image_processor
@@ -196,7 +197,7 @@ def generate_image_to_stream(
 
                 case "uri":
                     db = get_db_unmanaged()
-                    crud.update_imageorder_status(db, unique_id, True, img_res.message)
+                    crud.update_imageorder_status(db, unique_id, GenerationStates.COMPLETED, img_res.message)
                     db.close()
                     continue
 

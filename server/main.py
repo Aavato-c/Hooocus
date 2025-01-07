@@ -8,6 +8,7 @@ from pprint import pprint as pp
 ROOT_DIR = os.path.abspath(__file__).split("server")[0]
 sys.path.append(ROOT_DIR)
 
+from db.models.pydantic_m import GenerationStates
 from server.models_for_server import ImageGenerationObjectForRequests
 from h3_utils.flags import SDXL_ASPECT_RATIOS_CLASS
 from h3_utils.path_configs import FolderPathsConfig
@@ -51,13 +52,14 @@ def serve_photo(file_uuid: str, extension: str, db: Session = Depends(get_db)):
         gen_status = crud.should_generate_or_url(db, file_uuid)
         match gen_status:
             
-            case "generate":
+            case GenerationStates.NOT_STARTED:
                 order_data = crud.get_imageorder(db, file_uuid)
                 if order_data is None:
                     return JSONResponse(content="", status_code=404)
+                crud.update_imageorder_status(db, file_uuid, GenerationStates.IN_PROGRESS) 
                 return StreamingResponse(generate_image_to_stream(order_data, file_uuid), media_type="multipart/x-mixed-replace; boundary=frame")
             
-            case "url":
+            case GenerationStates.COMPLETED:
                 if os.path.exists(f"{FolderPathsConfig.path_outputs}/{file_uuid}.{extension}"):
                     with open(f"outputs/{file_uuid}.{extension}", "rb") as f:
                         photo = f.read()
@@ -65,8 +67,11 @@ def serve_photo(file_uuid: str, extension: str, db: Session = Depends(get_db)):
                 else:
                     raise HTTPException(status_code=500)
             
-            case "not_found":
+            case GenerationStates.NOT_FOUND:
                 return JSONResponse(status_code=404, content="")
+            
+            case _:
+                return JSONResponse(status_code=500, content="")
         
     except Exception as e:
         log.error(f"Error serving photo: {e}")

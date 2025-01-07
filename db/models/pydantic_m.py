@@ -1,9 +1,11 @@
+from enum import Enum
+from http.client import NOT_FOUND
 import os, sys
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CURR_DIR.split("db")[0])
 
 from uuid import UUID
-from typing import Optional, Dict, Any
+from typing import Literal, Optional, Dict, Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -21,6 +23,26 @@ class BaseModel(BaseModel):
             return UUID(v)
         else:
             raise ValueError("ID must be a UUID")
+
+
+
+class GenerationStates:
+    class En(Enum):
+        NOT_STARTED = "not_started"
+        IN_PROGRESS = "in_progress"
+        COMPLETED = "completed"
+        FAILED = "failed"
+    
+    Lit = Literal["not_started", "in_progress", "completed", "failed", "not_found"]
+
+    NOT_STARTED = En.NOT_STARTED.value
+    IN_PROGRESS = En.IN_PROGRESS.value
+    COMPLETED = En.COMPLETED.value
+    FAILED = En.FAILED.value
+    NOT_FOUND = "not_found"
+    
+    
+
 
 
 class SharedBase(BaseModel):
@@ -43,12 +65,14 @@ class ImageOrderInDb(SharedBase):
         soft_delete (bool): A flag to indicate if the image has been soft-deleted.
         generation_data (JSON): The data used to generate the image.
         image_uri (Optional[str]): The URI of the image.
-        has_been_generated (bool): A flag to indicate if the image has been generated.
+        generation_state (GenerationStates.Lit): The state of the image generation
+        log_dict (Optional[Dict[str, Any]]): The log of the image generation
     """
 
     image_uri: Optional[str] = None
     generation_data: object | dict
-    has_been_generated: bool = False
+    generation_state: GenerationStates.Lit = GenerationStates.NOT_STARTED
+    log_dict: Optional[Dict[str, Any]] = {}
 
 class ImageOrderInCreate(BaseModel):
     """ImageOrderInCreate
@@ -60,7 +84,8 @@ class ImageOrderInCreate(BaseModel):
         soft_delete (Optional[bool]): Whether the image is soft deleted
         generation_data (Dict[str, Any]): The data used to generate the image
         image_uri (Optional[str]): The URI of the image
-        has_been_generated (Optional[bool]): Whether the image has been generated
+        generation_state (GenerationStates.Lit): The state of the image generation
+        log_dict (Optional[Dict[str, Any]]): The log of the image generation
 
     """
 
@@ -71,7 +96,8 @@ class ImageOrderInCreate(BaseModel):
 
     generation_data: object | dict
     image_uri: Optional[str] = None
-    has_been_generated: Optional[bool] = False
+    generation_state: GenerationStates.Lit = GenerationStates.NOT_STARTED
+    log_dict: Optional[Dict[str, Any]] = {}
     
     
 class ImageOrderInResponse(SharedBase):
@@ -84,9 +110,11 @@ class ImageOrderInResponse(SharedBase):
         soft_delete (bool): Whether the image is soft deleted
         generation_data (Dict[str, Any]): The data used to generate the image
         image_uri (Optional[str]): The URI of the image
-        has_been_generated (bool): Whether the image has been generated
+        generation_state (GenerationStates.Lit): The state of the image generation
+        log_dict (Optional[Dict[str, Any]]): The log of the image generation
 
     """
     generation_data: object | dict
     image_uri: Optional[str] = None
-    has_been_generated: bool
+    generation_state: GenerationStates.Lit = GenerationStates.NOT_STARTED
+    log_dict: Optional[Dict[str, Any]] = {}

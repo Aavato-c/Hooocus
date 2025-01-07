@@ -10,20 +10,29 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from db.models.sqlalchemy_m import Base
+import db.models.inmem_db_models as inmemModels
+
 
 
 logger = LoggingUtil(__file__).get_logger()
 
-
-
 engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
+
+in_mem_url = "sqlite:////dev/shm/inmem.db"
+
+in_memory_engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
 
 
 # Create a session object that will be used to interact with the database
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+InMemSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=in_memory_engine)
+
 # Create the database tables
 Base.metadata.create_all(bind=engine)
+
+inmemModels.InMemBase.metadata.create_all(bind=in_memory_engine)
+
 
 def get_db():
     """Get database connection object that can be used to interact with the database.
@@ -54,4 +63,9 @@ def get_db_unmanaged():
         db = SessionLocalTesting()
     else:
         db = SessionLocal()
+    return db
+
+
+def get_db_inmem():
+    db = InMemSessionLocal()
     return db

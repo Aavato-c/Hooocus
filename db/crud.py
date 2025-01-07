@@ -50,13 +50,13 @@ def add_imageorder(db: Session, order_data: pm.ImageOrderInCreate, optional_uuid
         log.error(f"Error adding event: {e}")
         raise e
 
-def update_imageorder_status(db: Session, order_id: UUIDType, status: bool, uri: str = None) -> bool:
+def update_imageorder_status(db: Session, order_id: UUIDType, status: pm.GenerationStates.Lit, uri: str = None) -> bool:
     """Update the status of an image order
 
     Args:
         db (Session): SQLAlchemy Session
         order_id (UUID): The ID of the image order
-        status (bool): The status of the image order (True if generated, False if not)
+        status (pm.GenerationStates.Lit): The status of the image order
         uri (Optional[str], None): The URI of the image, default is None
         
     Returns:
@@ -67,7 +67,7 @@ def update_imageorder_status(db: Session, order_id: UUIDType, status: bool, uri:
     """
     try:
         order = db.query(sm.ImageOrder).filter(sm.ImageOrder.id == order_id).first()
-        order.has_been_generated = status
+        order.generation_state = status
         order.image_uri = uri
         order.updated_at = get_timestamp()
         db.commit()
@@ -77,7 +77,7 @@ def update_imageorder_status(db: Session, order_id: UUIDType, status: bool, uri:
         try:
             # Check if the order has been updated
             updated_order = db.query(sm.ImageOrder).filter(sm.ImageOrder.id == order_id).first()
-            if updated_order.has_been_generated != status:
+            if updated_order.generation_state != status:
                 raise Exception("Failed to update image order status")
         except Exception as e:
             log.error(f"Error updating image order status: {e}")
@@ -110,7 +110,7 @@ def get_imageorder(db: Session, order_id: UUIDType) -> pm.ImageOrderInResponse:
         log.error(f"Error getting image order: {e}")
         raise e    
 
-def should_generate_or_url(db: Session, order_id: UUIDType) -> Literal["generate", "url", "not_found"]:
+def should_generate_or_url(db: Session, order_id: UUIDType) -> pm.GenerationStates.Lit:
     """Check if an image order should be generated or if the URL should be returned
 
     Args:
@@ -124,12 +124,10 @@ def should_generate_or_url(db: Session, order_id: UUIDType) -> Literal["generate
         Exception: If an error occurs
     """
     try:
-        order = db.query(sm.ImageOrder).filter(sm.ImageOrder.id == order_id).first()
-        if order is None:
+        generation_state = db.query(sm.ImageOrder.generation_state).filter(sm.ImageOrder.id == order_id).first()
+        if generation_state is None:
             return "not_found"
-        if order.has_been_generated:
-            return "url"
-        return "generate"
+        return generation_state
     except Exception as e:
         log.error(f"Error getting image URL: {e}")
         raise e

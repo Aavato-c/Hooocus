@@ -1,4 +1,6 @@
 import os, sys
+
+from db.models.pydantic_m import GenerationStates
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CURR_DIR.split("db")[0])
 
@@ -19,6 +21,7 @@ from db.utils import get_uuid
 
 Base = declarative_base()
 
+
 class ImageOrder(Base):
     """Image model
 
@@ -34,7 +37,8 @@ class ImageOrder(Base):
         soft_delete (bool): A flag to indicate if the image has been soft-deleted.
         generation_data (JSON): The data used to generate the image.
         image_uri (Optional[str]): The URI of the image.
-        has_been_generated (bool): A flag to indicate if the image has been generated.
+        generation_state (str): The state of the image generation.
+        log_dict (Optional[JSON]): A dictionary containing log information.
 
     """
     __tablename__ = 'image_order'
@@ -46,4 +50,5 @@ class ImageOrder(Base):
 
     image_uri =  Column(String, nullable=True)
     generation_data = Column(JSON, nullable=False)
-    has_been_generated = Column(Boolean, default=False, nullable=False)
+    generation_state = Column(String, nullable=False)
+    log_dict = Column(JSON, nullable=True)
