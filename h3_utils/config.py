@@ -261,7 +261,7 @@ class _InitialImageGenerationParams(BaseModel):
     enhance_task: Optional[EnhanceMaskCtrls] = None
     freeu_controls: Optional[FreeUControls] = None
     inpaint_options: Optional[InptaintOptions] = None
-    controlnet_tasks: Optional[List[BaseControlNetTaskForRequests]] = None
+    controlnet_tasks: Optional[List[BaseControlNetTaskForRequests]] = []
     overwrite_controls: Optional[OverWriteControls] = None
     developer_options: Optional[DeveloperOptions] = DeveloperOptions()
 
