@@ -29,14 +29,15 @@ InMemBase = declarative_base()
 class TempImgData(InMemBase):
     __tablename__ = 'temp_img'
     
-    id = Column(UUIDType(as_uuid=False), primary_key=True, default=get_uuid())
-    updated_at = Column(REAL, nullable=False, default=dt.datetime.now().timestamp())
+    id = Column(UUIDType(as_uuid=False), primary_key=True, default=get_uuid)
+    updated_at = Column(REAL, nullable=False)
     order_uuid =  Column(UUIDType(as_uuid=False), nullable=False)
     image_format = Column(String, nullable=False)
     image_data = Column(BLOB, nullable=False)
 
-#Pydantic model
+
 class TempImgDataAdd(BaseModel):
+    updated_at: float
     order_uuid: str
     image_format: str
     image_data: bytes

@@ -32,13 +32,15 @@ class GenerationStates:
         IN_PROGRESS = "in_progress"
         COMPLETED = "completed"
         FAILED = "failed"
+        STARTING = "starting"
     
-    Lit = Literal["not_started", "in_progress", "completed", "failed", "not_found"]
+    Lit = Literal["not_started", "in_progress", "completed", "failed", "not_found", "starting"]
 
     NOT_STARTED = En.NOT_STARTED.value
     IN_PROGRESS = En.IN_PROGRESS.value
     COMPLETED = En.COMPLETED.value
     FAILED = En.FAILED.value
+    STARTING = En.STARTING.value
     NOT_FOUND = "not_found"
     
     

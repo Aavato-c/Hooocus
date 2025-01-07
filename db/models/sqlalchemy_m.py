@@ -17,9 +17,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import declarative_base
 
-from db.utils import get_uuid
+from db.utils import get_uuid, get_timestamp
 
 Base = declarative_base()
+
 
 
 class ImageOrder(Base):
@@ -43,10 +44,10 @@ class ImageOrder(Base):
     """
     __tablename__ = 'image_order'
     
-    id = Column(UUIDType(as_uuid=False), primary_key=True, default=get_uuid())
+    id = Column(UUIDType(as_uuid=False), primary_key=True, default=get_uuid)
     soft_delete = Column(Boolean, default=False, nullable=False)
-    created_at = Column(REAL, default=dt.datetime.now().timestamp(), nullable=False)
-    updated_at = Column(REAL, default=dt.datetime.now().timestamp(), nullable=False)
+    created_at = Column(REAL, default=get_timestamp, nullable=False)
+    updated_at = Column(REAL, default=get_timestamp, nullable=False)
 
     image_uri =  Column(String, nullable=True)
     generation_data = Column(JSON, nullable=False)

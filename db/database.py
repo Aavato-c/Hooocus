@@ -18,7 +18,7 @@ logger = LoggingUtil(__name__).get_logger()
 
 engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
 
-in_mem_url = "sqlite:////dev/shm/inmem.db"
+in_mem_url = "sqlite:////run/shm/inmem.db"
 
 in_memory_engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
 
@@ -69,3 +69,10 @@ def get_db_unmanaged():
 def get_db_inmem():
     db = InMemSessionLocal()
     return db
+
+def get_temp_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

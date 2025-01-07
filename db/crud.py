@@ -1,7 +1,13 @@
+import datetime
 import re
 import os, sys
 import json
-from typing import Literal
+from time import perf_counter
+from typing import Literal, Union
+
+from h3_utils.flags import OutputFormat
+from server.models_for_server import ImageGenerationObjectForRequests
+
 
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CURR_DIR.split("db")[0])
@@ -12,15 +18,20 @@ from sqlalchemy import UUID as UUIDType
 from db.utils import get_timestamp
 from db.models import pydantic_m as pm
 from db.models import sqlalchemy_m as sm
+from db.models.inmem_db_models import TempImgDataAdd, TempImgDataReturn, TempImgData
 
 from h3_utils.logging_util import LoggingUtil
+from h3_utils.path_configs import FolderPathsConfig
+
+OUTPUT_DIR = FolderPathsConfig.path_outputs
 
 log = LoggingUtil(__name__).get_logger()
+
 
 # =============================================================================
 #    Image order functions
 # =============================================================================
-def add_imageorder(db: Session, order_data: pm.ImageOrderInCreate, optional_uuid: UUIDType = None) -> UUIDType:
+def add_imageorder(db: Session, order_data: ImageGenerationObjectForRequests, optional_uuid: UUIDType = None) -> UUIDType:
     """Add a new image order to the database
 
     Args:
@@ -31,6 +42,7 @@ def add_imageorder(db: Session, order_data: pm.ImageOrderInCreate, optional_uuid
         uuid_of_new_order (UUID): The ID of the new image order
     """
     try:
+        log.debug(f"Adding new image order. Order uid: {order_data.uid}. Imagetask seed: {order_data.seed}")
         new_order = pm.ImageOrderInCreate(generation_data=order_data.model_dump_json())
         new_order_to_add = sm.ImageOrder(**new_order.model_dump())
         
@@ -127,7 +139,64 @@ def should_generate_or_url(db: Session, order_id: UUIDType) -> pm.GenerationStat
         generation_state = db.query(sm.ImageOrder.generation_state).filter(sm.ImageOrder.id == order_id).first()
         if generation_state is None:
             return "not_found"
-        return generation_state
+        return generation_state[0]
     except Exception as e:
         log.error(f"Error getting image URL: {e}")
+        raise e
+    
+
+def update_inmem_img_cache(inmem_db: Session, order_id: UUIDType, img_data: bytearray, img_format: str) -> bool:
+    log.debug(f"Updating in-memory image cache for order: {order_id}")
+    try:
+        start_time = perf_counter()
+        data_to_add = TempImgDataAdd(order_uuid=order_id, image_format=img_format, image_data=img_data, updated_at=get_timestamp())
+        log.debug(f"Adding temp image data with updated_at: {data_to_add.updated_at}")
+        data_to_add = TempImgData(**data_to_add.model_dump())
+        log.debug(data_to_add.updated_at)
+        inmem_db.add(data_to_add)
+        inmem_db.commit()
+        log.debug(f"Time taken to update in-memory image cache: {perf_counter() - start_time}")
+        return True
+    except Exception as e:
+        log.error(f"Error updating in-memory image cache: {e}")
+        raise e
+    
+def get_temp_img_for_order(inmem_db: Session, order_id: UUIDType, finished: bool = False) -> Union[bytearray, str] | None:
+    try:
+        start_time = perf_counter()
+        if finished: 
+            nofile = True
+            for outputformat in OutputFormat.all:
+                try:
+                    with open(f"{OUTPUT_DIR}/{order_id}.{outputformat}", "rb") as f: #TOOD Handle format change
+                        img_data = f.read()
+                        img_format = outputformat
+                        nofile = False
+                        break
+                except FileNotFoundError:
+                    pass
+            if nofile:
+                raise FileNotFoundError(f"File not found for order: {order_id}")
+            return img_data, img_format
+
+        else:            
+            img_data, img_format, updated_at = inmem_db.query(TempImgData.image_data, TempImgData.image_format, TempImgData.updated_at).filter(TempImgData.order_uuid == order_id).order_by(TempImgData.updated_at.desc()).first()
+            log.debug(f"Image update time: {datetime.datetime.fromtimestamp(updated_at)}")
+            if img_data is None:
+                return None
+            log.debug(f"Time taken to get in-memory image cache: {perf_counter() - start_time}")
+            return img_data, img_format
+    except Exception as e:
+        log.error(f"Error getting in-memory image cache: {e}")
+        raise e
+        
+def clear_cache_for_temp_img(db: Session, order_id: UUIDType | str) -> bool:
+    try:
+        start_time = perf_counter()
+        db.query(TempImgData).filter(TempImgData.order_uuid == order_id).delete()
+        db.commit()
+        log.debug(f"Time taken to clear in-memory image cache: {perf_counter() - start_time}")
+        return True
+    except Exception as e:
+        log.error(f"Error clearing in-memory image cache: {e}")
         raise e

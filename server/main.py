@@ -19,10 +19,10 @@ from sqlalchemy.orm import Session
 from fastapi import FastAPI, HTTPException, Response, Depends
 from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 
-from db.database import get_db
+from db.database import get_db, get_temp_db
 from db import crud
 
-from imagen_main import generate_image_to_stream
+from imagen_main import generate_image_to_stream, yield_temps_if_streaming
 
 from h3_utils.logging_util import LoggingUtil
 from h3_utils.config import ImageGenerationObject
@@ -51,31 +51,39 @@ def read_root():
     return JSONResponse(content="Hello World", status_code=200)
 
 @app.get("/photo/{file_uuid}.{extension}")
-def serve_photo(file_uuid: str, extension: str, db: Session = Depends(get_db)):
+def serve_photo(file_uuid: str, extension: str, db: Session = Depends(get_db), db_temp: Session = Depends(get_temp_db)):
     try:
         gen_status = crud.should_generate_or_url(db, file_uuid)
         match gen_status:
             
             case GenerationStates.NOT_STARTED:
+                log.debug(f"Status in serve_photo: {gen_status}")
                 order_data = crud.get_imageorder(db, file_uuid)
                 if order_data is None:
                     return JSONResponse(content="", status_code=404)
-                crud.update_imageorder_status(db, file_uuid, GenerationStates.IN_PROGRESS) 
+                crud.update_imageorder_status(db, file_uuid, GenerationStates.STARTING) 
                 return StreamingResponse(generate_image_to_stream(order_data, file_uuid), media_type="multipart/x-mixed-replace; boundary=frame")
             
             case GenerationStates.COMPLETED:
+                log.debug(f"Status in serve_photo: {gen_status}")
                 if os.path.exists(f"{FolderPathsConfig.path_outputs}/{file_uuid}.{extension}"):
                     with open(f"outputs/{file_uuid}.{extension}", "rb") as f:
                         photo = f.read()
                     return Response(content=photo, media_type=f"image/{extension}")
                 else:
                     raise HTTPException(status_code=500)
-            
+                
+            case GenerationStates.STARTING | GenerationStates.IN_PROGRESS:
+                log.debug(f"Status in serve_photo: {gen_status}")
+                return StreamingResponse(yield_temps_if_streaming(file_uuid), media_type="multipart/x-mixed-replace; boundary=frame")
+
             case GenerationStates.NOT_FOUND:
                 return JSONResponse(status_code=404, content="")
             
+
+            
             case _:
-                return JSONResponse(status_code=500, content="")
+                return HTTPException(status_code=500)
         
     except Exception as e:
         log.error(f"Error serving photo: {e}")
@@ -100,6 +108,7 @@ auth_doc = {
 def get_photo_genobject(_is_verified: Annotated[bool, Depends(verify_user)], request: ImageGenerationObjectForRequests, db: Session = Depends(get_db)):
     try:
         request_validated = ImageGenerationObject.model_validate(request)
+
         if request_validated.uid != "":
             log.debug(f"Adding image order with UID: {request_validated.uid}. UID was provided.")
             uuid_of_order = crud.add_imageorder(db, request_validated, request_validated.uid)

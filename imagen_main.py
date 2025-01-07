@@ -1,12 +1,14 @@
 import base64
+from calendar import c
 import io
 import json
 import os
-from typing import Literal
+from re import L
+from typing import Literal, final
 import cv2
 from numpy import ndarray
 from db import crud
-from db.database import get_db, get_db_unmanaged
+from db.database import get_db, get_db_inmem, get_db_unmanaged
 from db.models.pydantic_m import GenerationStates
 from h3_utils.flags import Performance
 from modules.async_worker import ImageTaskProcessor
@@ -26,7 +28,6 @@ DEBUG_IMAGEN = False
 if DEBUG_IMAGEN:
     log.warning('Debug mode enabled in imagen_main.py.')
 
-OUTPUT_DIR = os.getenv('OUTPUT_DIR', 'outputs')
 
 
 
@@ -123,6 +124,24 @@ def encoded_image_helper(image: ndarray, format: RETURN_FORMATS.LIT, yield_type:
             raise Exception('Invalid format.')
 
 
+
+def img_convert_from_generations(image: ndarray, img_format: str = "webp") -> bytes:
+    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    match img_format:
+        case "webp":
+            (flag, encodedImage) = cv2.imencode(".webp", rgb_image)
+        case "png":
+            (flag, encodedImage) = cv2.imencode(".png", rgb_image)
+        case "jpeg":
+            (flag, encodedImage) = cv2.imencode(".jpeg", rgb_image)
+        case _:
+            raise Exception('Invalid image format.')    
+    if not flag:
+        raise Exception('Error encoding image.')
+    
+    return bytearray(encodedImage)
+
+
 def generate_image_to_stream(
         seed_generation_task: dict | object,
         unique_id: str,
@@ -160,66 +179,172 @@ def generate_image_to_stream(
     if newtask.image_number > 1:
         raise Exception('Image number must be 1.')
     
-    while not finished:
-        iterations += 1
-        if max_waits <= 0:
-            raise Exception('Max waits reached.')
-        time.sleep(0.2)
-        
-        if unique_id not in imgProcessor.yields:
-            time.sleep(1)
-            max_waits -= 1
-            continue
-
-        if len(imgProcessor.yields[unique_id]) > 0:
-            try:
-                img_res = imgProcessor.yields[unique_id].pop(0)
-            except KeyError as e:
-                if imgProcessor.processing:
-                    log.info('Processing...')
-                    time.sleep(1.0)
+    log.debug("In generate_image_to_stream. Starting to yield images.")
+    try:
+        inmem_db = get_db_inmem()
+        db = get_db_unmanaged()
+        while not finished:
+                iterations += 1
+                if max_waits <= 0:
+                    raise Exception('Max waits reached.')
+                time.sleep(0.2)
+                
+                if unique_id not in imgProcessor.yields:
+                    time.sleep(1)
+                    max_waits -= 1
                     continue
+
+                if len(imgProcessor.yields[unique_id]) > 0:
+                    try:
+                        img_res = imgProcessor.yields[unique_id].pop(0)
+                    except KeyError as e:
+                        if imgProcessor.processing:
+                            log.info('Processing...')
+                            time.sleep(1.0)
+                            continue
+                        else:
+                            log.error('No image processing.')
+                            raise e
+                    except Exception as e:
+                        raise e
+                    
+                    match img_res.yield_type:
+
+                        case "starting":
+                            log.debug("Got starting.")
+                            time.sleep(0.2)
+
+                        case "preview":
+                            log.debug("Got preview.")
+                            converted_img = img_convert_from_generations(img_res.image)
+
+                            if not crud.update_inmem_img_cache(inmem_db, unique_id, converted_img, img_format):
+                                raise Exception('Error updating in-memory image cache.')
+
+                            crud.update_imageorder_status(db, unique_id, GenerationStates.IN_PROGRESS)
+                            log.debug("Updated inmem cache.")
+                            yieldable = encoded_image_helper(img_res.image, return_format, "preview", img_format)
+                            yield yieldable
+
+                        case "result":
+                            log.debug("Got result.")
+                            converted_img = img_convert_from_generations(img_res.image)
+
+                            if not crud.update_inmem_img_cache(inmem_db, unique_id, converted_img, img_format):
+                                raise Exception('Error updating in-memory image cache with final img.')
+                            
+                            yieldable = encoded_image_helper(img_res.image, result_return_format, "result", img_format)
+                            yield yieldable
+
+                        case "uri":
+                            log.debug("Got uri.")
+                            crud.update_imageorder_status(db, unique_id, GenerationStates.COMPLETED, img_res.message)
+
+                        case "finish":
+                            log.debug("Got finish.")
+                            finished = True
+                            yieldable = encoded_image_helper(img_res.image, return_format, "finish", img_format)
+                            crud.clear_cache_for_temp_img(inmem_db, unique_id)
+                            yield yieldable
+
+                        case "waiting":
+                            iteration_image = iterations % 3
+                            yield notreadys[iteration_image]
+                            time.sleep(0.2)
+
+                        case _:
+                            raise Exception('Invalid yield type.')
+
                 else:
-                    log.error('No image processing.')
-                    raise e
-            except Exception as e:
-                raise e
+                    if imgProcessor.processing:
+                            max_waits -= 1
+                            time.sleep(1)
+                            continue
+    finally:
+        log.debug("Closing inmem_db and db.")
+        if not finished:
+            # TODO Remove if not raised
+            raise Exception('Not finished but ready to close?')
+        
+        inmem_db.close()
+        db.close()
+
+
+
+def yield_temps_if_streaming(unique_id: str,):
+    finished = False
+    final_yielded = False
+    max_waits = 100
+    iterations = 0
+    inmem_db = get_db_inmem()
+    db = get_db_unmanaged()
+    log.debug("Starting to yield temps.")
+    try:
+        while not finished:
+            iterations += 1
+            if max_waits <= 0:
+                raise Exception('Max waits reached.')
+            time.sleep(0.2)
             
-            match img_res.yield_type:
+            temp_status = crud.should_generate_or_url(db, unique_id)
+            log.debug(f"Temp status: {temp_status}")
+            if iterations > 100:
+                log.error(f"Iterations exceeded in temp yilder: {iterations}")
+                final_yielded = True
+            
+            if final_yielded == True:
+                        log.debug("In temp yield: Got final yield.")
+                        yield (
+                            b'--frame--\r\n'
+                        )
+                        finished = True
+                        continue
+            
+            match temp_status:
+                case GenerationStates.COMPLETED:
+                    log.debug("Yielded completed image.")
+                    tempimg, imgformat = crud.get_temp_img_for_order(inmem_db, unique_id)
+                    log.debug("Yielded final image.")
+                    yield (
+                        b'--frame\r\n'
+                        b'Content-Type: image/' + imgformat.encode() + b'\r\n\r\n'
+                        + tempimg
+                        + b'\r\n'
+                    )
+                    final_yielded = True
 
-                case "preview":
-                    yieldable = encoded_image_helper(img_res.image, return_format, "preview", img_format)
-                    yield yieldable
-
-                case "result":
-                    yieldable = encoded_image_helper(img_res.image, result_return_format, "result", img_format)
-                    yield yieldable
-
-                case "uri":
-                    db = get_db_unmanaged()
-                    crud.update_imageorder_status(db, unique_id, GenerationStates.COMPLETED, img_res.message)
-                    db.close()
-                    continue
-
-                case "finish":
-                    finished = True
-                    yieldable = encoded_image_helper(img_res.image, return_format, "finish", img_format)
-                    yield yieldable
-                    break
-
-                case "waiting":
+                case GenerationStates.IN_PROGRESS:
+                    log.debug("In temp yield: Got in progress.")
+                    tempimg, imgformat = crud.get_temp_img_for_order(inmem_db, unique_id)
+                    log.debug("Yielded in progress image.")
+                    yield (
+                        b'--frame\r\n'
+                        b'Content-Type: image/' + imgformat.encode() + b'\r\n\r\n'
+                        + tempimg
+                        + b'\r\n'
+                    )
+                    
+                    
+                case GenerationStates.STARTING:
+                    log.debug("In temp yield: Got starting.")
                     iteration_image = iterations % 3
-                    yield notreadys[iteration_image]
-                    time.sleep(0.2)
+                    log.debug("Yielded starting image.")
+                    yield (
+                        b'--frame\r\n'
+                        b'Content-Type: image/webp\r\n\r\n'
+                        + notreadys[iteration_image]
+                        + b'\r\n'
+                    )
+
 
                 case _:
-                    raise Exception('Invalid yield type.')
+                    raise Exception('Invalid generation state.')
+                
 
-        else:
-            if imgProcessor.processing:
-                    max_waits -= 1
-                    time.sleep(1)
-                    continue
+    finally:
+        log.debug("Closing inmem_db and db in Temp Yield.")
+        inmem_db.close()
+        db.close()
 
 
 if __name__ == '__main__':
