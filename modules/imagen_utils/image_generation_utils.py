@@ -493,6 +493,7 @@ def enhance_upscale(
         enhance_steps,
         current_progress,
     )
+    # TODO
     #steps, _, _, _ = apply_overrides(async_task, steps, height, width)
     exception_result = ""
     if len(goals_enhance) > 0:
