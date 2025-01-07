@@ -176,13 +176,12 @@ def calculate_weight_patched(self, patches, weight, key):
 
 def compute_cfg(self, uncond, cond, cfg_scale, t, patch_settings: PatchSettings = None):
     pid = os.getpid()
-    patch_settings: PatchSettings = patch_settings_GLOBAL_CAUTION[pid]
-    mimic_cfg = float(patch_settings.adaptive_cfg)
+    mimic_cfg = float(patch_settings_GLOBAL_CAUTION[pid].adaptive_cfg)
     real_cfg = float(cfg_scale)
 
     real_eps = uncond + real_cfg * (cond - uncond)
 
-    if cfg_scale > patch_settings.adaptive_cfg:
+    if cfg_scale > patch_settings_GLOBAL_CAUTION[pid].adaptive_cfg:
         mimicked_eps = uncond + mimic_cfg * (cond - uncond)
         return real_eps * t + mimicked_eps * (1 - t)
     else:
@@ -252,6 +251,8 @@ class BrownianTreeNoiseSamplerPatched:
 
 
 def sdxl_encode_adm_patched(self, **kwargs):
+    pid = os.getpid()
+    patch_settings: Dict[int, PatchSettings] = patch_settings_GLOBAL_CAUTION
     clip_pooled = ldm_patched.modules.model_base.sdxl_pooled(kwargs, self.noise_augmentor)
     
     current_pid = os.getpid()
@@ -330,7 +331,8 @@ def timed_adm(y, timesteps):
     return y
 
 
-def patched_cldm_forward(self, x, hint, timesteps, context, y=None, patch_settings: PatchSettings = None, **kwargs):
+def patched_cldm_forward(self, x, hint, timesteps, context, y=None, _patch_settings: PatchSettings = None, **kwargs):
+    patch_settings: PatchSettings = patch_settings_GLOBAL_CAUTION[os.getpid()]
     t_emb = ldm_patched.ldm.modules.diffusionmodules.openaimodel.timestep_embedding(timesteps, self.model_channels, repeat_only=False).to(x.dtype)
     emb = self.time_embed(t_emb)
     pid = os.getpid()
@@ -359,19 +361,17 @@ def patched_cldm_forward(self, x, hint, timesteps, context, y=None, patch_settin
     h = self.middle_block(h, emb, context)
     outs.append(self.middle_block_out(h, emb, context))
 
-    if patch_settings[pid].controlnet_softness > 0:
+    if patch_settings.controlnet_softness > 0:
         for i in range(10):
             k = 1.0 - float(i) / 9.0
-            outs[i] = outs[i] * (1.0 - patch_settings[pid].controlnet_softness * k)
+            outs[i] = outs[i] * (1.0 - patch_settings.controlnet_softness * k)
 
     return outs
 
 
 def patched_unet_forward(self, x, timesteps=None, context=None, y=None, control=None, transformer_options={}, **kwargs):
-    patch_settings = patch_settings_GLOBAL_CAUTION
-
     self.current_step = 1.0 - timesteps.to(x) / 999.0
-    patch_settings[os.getpid()].global_diffusion_progress = float(self.current_step.detach().cpu().numpy().tolist()[0])
+    patch_settings_GLOBAL_CAUTION[os.getpid()].global_diffusion_progress = float(self.current_step.detach().cpu().numpy().tolist()[0])
 
     y = timed_adm(y, timesteps)
 
