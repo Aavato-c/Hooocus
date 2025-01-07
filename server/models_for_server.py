@@ -33,6 +33,7 @@ class ImageGenerationObjectForRequests(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+
     uid: Optional[str] = ""
     has_been_processed: bool = False
     
@@ -44,7 +45,8 @@ class ImageGenerationObjectForRequests(BaseModel):
     height: Optional[int] = Field(None, description="The default height to use.")
     
     sample_sharpness: float = Field(2.0, description="The default sample sharpness to use.", ge=0.0, le=30.0)
-    seed: int = Field(random.randint(0, 1000000), description="The default seed to use.", ge=0, le= 2**63 - 1)
+    seed: int
+    do_not_update_seed: bool = False
     sampler_name: KSAMPLER_NAMES_LIT = "dpmpp_2m_sde_gpu"
     scheduler_name: str = "karras"
     
@@ -82,7 +84,6 @@ class ImageGenerationObjectForRequests(BaseModel):
     styles: List[str] = Field([
         "Fooocus V2",
         "Fooocus Enhance",
-        "Fooocus Sharp"
     ], description="The default styles to use.")
     
     vae_name: str = Field("Default (model)", description="The default vae to use.")

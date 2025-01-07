@@ -2,9 +2,11 @@ import os
 import sys
 from typing import Annotated
 from uuid import uuid4
+from fastapi.exceptions import RequestValidationError
+import starlette.exceptions
 import uvicorn
 from pprint import pprint as pp
-
+import traceback
 ROOT_DIR = os.path.abspath(__file__).split("server")[0]
 sys.path.append(ROOT_DIR)
 
@@ -16,7 +18,7 @@ from server.auth_handlers import verify_user
 
 from sqlalchemy.orm import Session
 
-from fastapi import FastAPI, HTTPException, Response, Depends
+from fastapi import FastAPI, HTTPException, Request, Response, Depends
 from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 
 from db.database import get_db, get_temp_db
@@ -29,7 +31,7 @@ from h3_utils.config import ImageGenerationObject
 
 from unavoided_globals import img_processor_globlal, shared
 
-log = LoggingUtil(name="main.py").get_logger()
+log = LoggingUtil(__name__).get_logger()
 
 
 

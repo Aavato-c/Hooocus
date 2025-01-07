@@ -43,7 +43,7 @@ log.debug(f"Traceback: {traceback.format_stack()}")
 
 preset_chosen: str = "default" # Modify this to change the preset
 current_preset = {}
-
+OUTPUT_DIR = os.getenv('OUTPUT_DIR', 'outputs')
 CustomNDArrayType: TypeAlias = Union[NDArray, List[NDArray]]
 
 try:
@@ -174,6 +174,7 @@ class LambdaStyle(BaseModel):
     negative_prompt: str
 
 
+
 class BaseControlNetTaskForRequests(BaseModel):
 
     stop: float = Field(0.5, ge=0, le=1)
@@ -193,6 +194,7 @@ class _InitialImageGenerationParams(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+
     uid: str = Field("", description="The default uid to use.")
     has_been_processed: bool = False
 
@@ -204,7 +206,7 @@ class _InitialImageGenerationParams(BaseModel):
     height: Optional[int] = Field(None, description="The default height to use.")
 
     sample_sharpness: float = Field(2.0, description="The default sample sharpness to use.", ge=0.0, le=30.0)
-    seed: int = random.randint(0, 2**63 - 1)
+    seed: int = 0
     sampler_name: KSAMPLER_NAMES_LIT = KSAMPLER.dpmpp_2m_sde_gpu.name
     scheduler_name: SCHEDULER_NAMES_LITERAL = SCHEDULER_NAMES_CLS.karras
 
@@ -220,9 +222,9 @@ class _InitialImageGenerationParams(BaseModel):
             [True, "None", 1.0],],
         description="The default LoRAs to use.",)
     
-    styles: List[str | LambdaStyle] = Field(["Fooocus V2","Fooocus Enhance","Fooocus Sharp"], description="Style additions for prompts")
+    styles: List[str | LambdaStyle] = Field(["Fooocus V2", "Fooocus Sharp"], description="Style additions for prompts")
     additional_style_lamdas: List[LambdaStyle] = Field([], description="The default additional style lamdas to use.")
-    
+    seed: int = 0
     vae_name: str = Field("Default (model)", description="The default vae to use.")
 
     performance_selection: Performance = Performance.SPEED
@@ -333,7 +335,7 @@ class ApplyImageInputParams(BaseModel):
     use_synthetic_refiner: bool
 
 
-yield_types = Literal['preview', 'result', 'waiting', 'uri', 'finish']
+yield_types = Literal['preview', 'result', 'waiting', 'uri', 'finish', 'starting']
 
 class YieldObject(BaseModel):
     class Config:
@@ -347,6 +349,8 @@ class YieldObject(BaseModel):
     uid: str
 
 class ImageGenerationObject(_InitialImageGenerationParams):
+    prepared_tasklets: Optional[TaskletObject] = None
+    processing_time: Optional[float] = None
     
     class Config:
         arbitrary_types_allowed = True
