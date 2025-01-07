@@ -42,6 +42,10 @@ if SERVER_URL is None:
     log.error("SERVER_URL is not set.")
     exit(1)
 
+@app.exception_handler(Exception)
+def debug_exception_handler(request: Request, exc: Exception):
+    log.error(f"Error: {exc}, {traceback.format_exc()}")
+
 @app.get("/")
 def read_root():
     return JSONResponse(content="Hello World", status_code=200)

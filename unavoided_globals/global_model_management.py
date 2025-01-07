@@ -3,7 +3,7 @@
 import threading
 from h3_utils.logging_util import LoggingUtil
 
-log = LoggingUtil("GlobalModelManagement").get_logger()
+log = LoggingUtil(__name__).get_logger()
 
 class InterruptProcessingException(Exception):
     log.error(str(Exception))

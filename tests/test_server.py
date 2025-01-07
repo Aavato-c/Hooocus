@@ -23,7 +23,7 @@ dotenv.load_dotenv()
 
 ACCEPTED_API_TOKEN_FOR_IMAGE_GENERATION = os.environ.get("ACCEPTED_API_TOKEN_FOR_IMAGE_GENERATION")
 
-log = LoggingUtil(log_to_file=True).get_logger()
+log = LoggingUtil(__name__).get_logger()
 
 # GLOBAL VAR USAGE
 # Affects the database connection in db/database.py (get_db_unmanaged)

@@ -17,7 +17,7 @@ from consts import SERVER_URL
 from h3_utils.path_configs import FolderPathsConfig
 from h3_utils.logging_util import LoggingUtil
 
-log = LoggingUtil(__file__).get_logger()
+log = LoggingUtil(__name__).get_logger()
 
 
 def get_presets():

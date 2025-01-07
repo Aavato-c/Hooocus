@@ -18,7 +18,7 @@ from h3_utils.flags import LORA_FILENAMES, MODEL_FILENAMES
 from h3_utils.path_configs import FolderPathsConfig
 from h3_utils.logging_util import LoggingUtil
 
-log = LoggingUtil().get_logger()
+log = LoggingUtil(__name__).get_logger()
 args = LAUNCH_ARGS
 
 log.info(f"Python {sys.version}")

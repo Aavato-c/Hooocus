@@ -10,7 +10,7 @@ from modules.async_worker import ImageTaskProcessor
 from unavoided_globals.global_model_management import global_model_management
 
 from h3_utils.logging_util import LoggingUtil
-log = LoggingUtil(name="img_processor_global.py").get_logger()
+log = LoggingUtil(__name__).get_logger()
 
 
 def create_image_processor():

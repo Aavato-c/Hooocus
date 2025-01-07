@@ -12,7 +12,7 @@ from typing import Annotated
 
 
 
-logger = LoggingUtil(__file__)
+logger = LoggingUtil(__name__)
 log = logger.get_logger()
 
 oauth2_scheme = OAuth2()

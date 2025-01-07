@@ -11,7 +11,7 @@ import packaging.version
 from packaging.requirements import Requirement
 from h3_utils.logging_util import LoggingUtil
 
-log = LoggingUtil().get_logger()
+log = LoggingUtil(__name__).get_logger()
 
 logging.getLogger("torch.distributed.nn").setLevel(logging.ERROR)  # sshh...
 logging.getLogger("xformers").addFilter(lambda record: 'A matching Triton is not available' not in record.getMessage())

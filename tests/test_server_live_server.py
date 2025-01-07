@@ -22,7 +22,7 @@ dotenv.load_dotenv()
 ACCEPTED_API_TOKEN_FOR_IMAGE_GENERATION = os.environ.get("ACCEPTED_API_TOKEN_FOR_IMAGE_GENERATION")
 url_base = consts.SERVER_URL
 
-log = LoggingUtil(log_to_file=True).get_logger()
+log = LoggingUtil(__name__).get_logger()
 
 class DataManager:
     session = RequestsSession()

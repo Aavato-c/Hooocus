@@ -17,7 +17,7 @@ from h3_utils.logging_util import LoggingUtil
 import time
 from h3_utils.config import LAUNCH_ARGS, HooocusConfig, ImageGenerationObject, OverWriteControls, YieldObject
 
-log = LoggingUtil(name="imagen_main.py").get_logger()
+log = LoggingUtil(__name__).get_logger()
 
 # TODO - Is this necessary?
 

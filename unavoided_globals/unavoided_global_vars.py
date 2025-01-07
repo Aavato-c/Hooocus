@@ -9,7 +9,7 @@ from ldm_patched.contrib.external_model_advanced import ModelSamplingDiscrete, M
 from h3_utils.config import ImageGenerationObject
 
 from h3_utils.logging_util import LoggingUtil
-log = LoggingUtil("GlobalVarManager").get_logger()
+log = LoggingUtil(__name__).get_logger()
 
 """
 This is of course a testament to the fact that the codebase is not that well-structured yet.

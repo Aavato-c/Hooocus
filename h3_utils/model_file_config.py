@@ -20,7 +20,7 @@ from h3_utils.path_configs import FolderPathsConfig
 from h3_utils.flags import CONTROLNET_TASK_TYPES_CLASS, PerformanceLoRA
 
 
-log = LoggingUtil().get_logger()
+log = LoggingUtil(__name__).get_logger()
 
 class _BaseModelFile(BaseModel):
     """A base class for model files

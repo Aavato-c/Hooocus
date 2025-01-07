@@ -15,7 +15,7 @@ from typing import Literal
 import tempfile
 from h3_utils.logging_util import LoggingUtil
 
-log = LoggingUtil().get_logger()
+log = LoggingUtil(__name__).get_logger()
 dotenv.load_dotenv(override=True)
 
 random_style_name = 'Random Style'
@@ -221,6 +221,8 @@ class OutputFormat:
     PNG = 'png'
     JPEG = 'jpeg'
     WEBP = 'webp'
+
+    all = [PNG, JPEG, WEBP]
 
 OUTPUTFORMAT_LIT = Literal["png", "jpeg", "webp"]
 

@@ -27,7 +27,7 @@ from h3_utils.logging_util import LoggingUtil
 
 from unavoided_globals.unavoided_global_vars import patch_settings_GLOBAL_CAUTION
 
-logger = LoggingUtil().get_logger()
+logger = LoggingUtil(__name__).get_logger()
 logger.name = 'default_pipeline'
 
 class DefaultPipeline:

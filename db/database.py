@@ -14,7 +14,7 @@ import db.models.inmem_db_models as inmemModels
 
 
 
-logger = LoggingUtil(__file__).get_logger()
+logger = LoggingUtil(__name__).get_logger()
 
 engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
 

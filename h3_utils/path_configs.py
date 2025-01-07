@@ -4,7 +4,7 @@ import os
 import tempfile
 from h3_utils.logging_util import LoggingUtil
 
-log = LoggingUtil().get_logger()
+log = LoggingUtil(__name__).get_logger()
 
 class FolderPathsConfig:
     path_checkpoints = "./models/checkpoints/"

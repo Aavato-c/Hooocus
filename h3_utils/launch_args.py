@@ -12,7 +12,7 @@ from h3_utils.flags import (
     LatentPreviewMethod,
 )
 
-log = LoggingUtil().get_logger()
+log = LoggingUtil(__name__).get_logger()
 
 class GlobalEnv:
     # NB! Do not store any sensitive information here. Use normal .env files for that.

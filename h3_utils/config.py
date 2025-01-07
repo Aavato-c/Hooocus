@@ -37,7 +37,7 @@ from h3_utils.flags import EXAMPLE_ENHANCE_DETECTION_PROMPTS, INPAINT_MASK_CLOTH
 from h3_utils.launch_args import METADATA_SCHEME, LAUNCH_ARGS
 import traceback
 
-log = LoggingUtil().get_logger()
+log = LoggingUtil(__name__).get_logger()
 log.debug("Loading config.py")
 log.debug(f"Traceback: {traceback.format_stack()}")
 

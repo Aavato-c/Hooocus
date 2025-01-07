@@ -85,7 +85,7 @@ OUTPUT_DIR = FolderPathsConfig.path_outputs
 
 GlobalConfig = config.LAUNCH_ARGS
 
-logger = LoggingUtil(name="ImageTaskProcessor").get_logger()
+logger = LoggingUtil(__name__).get_logger()
 
 SERVER_URL = os.environ.get("SERVER_URL", None)
 if SERVER_URL is None:
@@ -293,6 +293,14 @@ class ImageTaskProcessor:
         
 
         #memory_usage = torch.cuda.memory_allocated() / 1024 / 1024
+        _self.yields[uid].append(
+            config.YieldObject(
+                yield_type='starting',
+                progress=_self.current_progress + (100 - preparation_steps) / float(_self.all_steps) * parent_task.steps,
+                message=f'Processing image {id + 1}/{len(_self.tasks)} ...',
+                uid=uid
+            )
+        )
         imgs = _self.pipeline.process_diffusion(
             # Shared parameters of all tasklets
             steps=parent_task.steps,
@@ -363,6 +371,18 @@ class ImageTaskProcessor:
 
         processing_time = time.perf_counter() - processing_start_time
         logger.warning(f"Processing time: {processing_time:.2f} seconds")
+        del prepared_task.encoded_positive_cond 
+        del prepared_task.encoded_negative_cond
+        _self.generation_task.prepared_tasklets = prepared_task
+        _self.generation_task.processing_time = processing_time
+        _self.generation_task.save_log()
+        
+
+
+        
+        
+
+
         
         return imgs, img_paths
 
