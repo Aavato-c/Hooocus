@@ -23,6 +23,7 @@ import torch
 
 from h3_utils.filesystem_utils import download_image_from_url
 from h3_utils.path_configs import FolderPathsConfig
+from ldm_patched.modules import controlnet
 from ldm_patched.modules.clip_vision import ClipVisionModel
 from modules.imagen_utils.imagen_patch_utils.patch import patch_all
 from unavoided_globals import unavoided_global_vars
@@ -385,13 +386,13 @@ class ImageTaskProcessor:
 
     # OK
     def get_conditions_from_input_img_controlnet(self, positive_cond, negative_cond):
-        if self.generation_task.controlnet_tasks:
+        if len(self.generation_task.controlnet_tasks) > 0:
             for controlnet_task in self.generation_task.controlnet_tasks:
                 if controlnet_task.name in [ControlNetTasks.CPDS.name, ControlNetTasks.PyraCanny.name]:
                     positive_cond, negative_cond = apply_controlnet(
                         positive_cond,
                         negative_cond,
-                        self.pipeline.loaded_ControlNets[controlnet_task.models[0].full_path()], # Only has one model
+                        self.pipeline.loaded_ControlNets[controlnet_task.paths_of_models[0]],
                         controlnet_task.img,
                         controlnet_task.weight,
                         0,
@@ -631,33 +632,24 @@ class ImageTaskProcessor:
         ImagePromptClipVIsion.download_model()
         ImagePromptAdapterNegative.download_model()
 
-        is_ip = False
-        is_face = False
-        is_pyracanny = False
-        is_cpds = False
         for controlnet_task in self.generation_task.controlnet_tasks:
             match controlnet_task.name:
                 case ControlNetTasks.ImagePrompt.name:
-                    is_ip = True
+                    ImagePromptAdapterPlus.download_model()
+                    self.ip_adapter.load_ip_adapter(self.clip_vision_path, self.ip_negative_path, self.ip_adapter_path)
+                    controlnet_task.paths_of_models = [self.ip_adapter_path]
                 case ControlNetTasks.FaceSwap.name:
-                    is_face = True
+                    ImagePromptAdapterFace.download_model()
+                    self.ip_adapter.load_ip_adapter(self.clip_vision_path, self.ip_negative_path, self.ip_adapter_face_path)
+                    controlnet_task.paths_of_models = [self.ip_adapter_face_path]
                 case ControlNetTasks.PyraCanny.name:
-                    is_pyracanny = True
+                    PyraCanny.download_model()
+                    self.pipeline.refresh_controlnets([self.controlnet_pyracanny_path])
+                    controlnet_task.paths_of_models = [self.controlnet_pyracanny_path]
                 case ControlNetTasks.CPDS.name:
-                    is_cpds = True
-
-        if is_ip:
-            ImagePromptAdapterPlus.download_model()
-            self.ip_adapter.load_ip_adapter(self.clip_vision_path, self.ip_negative_path, self.ip_adapter_path)
-        if is_face:
-            ImagePromptAdapterFace.download_model()
-            self.ip_adapter.load_ip_adapter(self.clip_vision_path, self.ip_negative_path, self.ip_adapter_face_path)
-        if is_pyracanny:
-            PyraCanny.download_model()
-            self.pipeline.refresh_controlnets([self.controlnet_pyracanny_path])
-        if is_cpds:
-            CPDS.download_model()
-            self.pipeline.refresh_controlnets([self.controlnet_cpds_path])        
+                    CPDS.download_model()
+                    self.pipeline.refresh_controlnets([self.controlnet_cpds_path])
+                    controlnet_task.paths_of_models = [self.controlnet_cpds_path]
 
         return True
 
@@ -877,9 +869,13 @@ class ImageTaskProcessor:
                     controlnet_task.img = download_image_from_url(controlnet_task.image_url)
 
         # TODO Move to it's own object, setup funcs
-        if ip_mode == flags.INPUT_IMAGE_MODES_CLASS.uov or (ip_mode == flags.INPUT_IMAGE_MODES_CLASS.ip and task.mix_image_prompt_and_vary_upscale == True):            
+        if (ip_mode == flags.INPUT_IMAGE_MODES_CLASS.uov or \
+            (ip_mode == flags.INPUT_IMAGE_MODES_CLASS.ip and task.mix_image_prompt_and_vary_upscale == True))\
+            and task.input_image != None:
+            logger.error(f"UOV is not implemented yet.")
+            sys.exit(1)
 
-            self.prepare_upscale() # TODO
+            #self.prepare_upscale() # TODO
 
             _inpaint_image = task.input_image['image']
             _inpaint_image = ensure_three_channels(_inpaint_image)
