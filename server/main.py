@@ -112,10 +112,10 @@ def get_photo_genobject(_is_verified: Annotated[bool, Depends(verify_user)], req
         request_validated = ImageGenerationObject.model_validate(request)
 
         if request_validated.uid != "":
-            log.debug(f"Adding image order with UID: {request_validated.uid}. UID was provided.")
+            log.info(f"Adding image order with UID: {request_validated.uid}. UID was provided.")
             uuid_of_order = crud.add_imageorder(db, request_validated, request_validated.uid)
         else:
-            log.debug("Adding image order.")
+            log.debug(f"Adding image order: {request_validated.uid}. No UID was provided.")
             uuid_of_order = crud.add_imageorder(db, request_validated)
         return JSONResponse(
             content={
