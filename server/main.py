@@ -11,7 +11,6 @@ ROOT_DIR = os.path.abspath(__file__).split("server")[0]
 sys.path.append(ROOT_DIR)
 
 from db.models.pydantic_m import GenerationStates
-from server.models_for_server import ImageGenerationObjectForRequests
 from h3_utils.flags import SDXL_ASPECT_RATIOS_CLASS
 from h3_utils.path_configs import FolderPathsConfig
 from server.auth_handlers import verify_user
@@ -27,7 +26,7 @@ from db import crud
 from imagen_main import generate_image_to_stream, yield_temps_if_streaming
 
 from h3_utils.logging_util import LoggingUtil
-from h3_utils.config import ImageGenerationObject
+from h3_utils.config import ImageGenerationObject, ImageGenerationObjectForRequests
 
 from unavoided_globals import img_processor_globlal, shared
 
