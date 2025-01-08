@@ -106,6 +106,7 @@ auth_doc = {
 }
 
 
+@app.post("/photo", openapi_extra=auth_doc)
 @app.post("/gen/photo/normal", openapi_extra=auth_doc)
 def get_photo_genobject(_is_verified: Annotated[bool, Depends(verify_user)], request: ImageGenerationObjectForRequests, db: Session = Depends(get_db)):
     try:
