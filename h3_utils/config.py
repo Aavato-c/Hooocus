@@ -1,6 +1,7 @@
 import os
 import sys
 
+from db import crud
 from h3_utils.model_file_config import controlnet_task_by_name
 
 
@@ -10,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pydantic_core import from_json
 from torch import Tensor
-
+from sqlalchemy.orm import Session
 from modules.model_file_utils.model_loader import load_file_from_url
 from h3_utils.path_configs import FolderPathsConfig
 
@@ -20,7 +21,6 @@ import random
 
 import numpy
 
-from h3_utils.flags import DESCRIBE_TYPE_PHOTO, ENHANCEMENT_UOV_PROMPT_TYPE_ORIGINAL, KSAMPLER, KSAMPLER_NAMES, KSAMPLER_NAMES_LIT, OUTPUTFORMAT_LIT, REFINER_SWAP_METHODS, SCHEDULER_NAMES_CLS, SCHEDULER_NAMES_LITERAL, SDXL_ASPECT_RATIOS, SDXL_ASPECT_RATIOS_CLASS, UPSCALE_OR_VARIATION_MODES, Overrides, Steps
 
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(PARENT_DIR)
@@ -34,6 +34,7 @@ from numpy.typing import NDArray
 
 from h3_utils.logging_util import LoggingUtil
 from h3_utils.flags import EXAMPLE_ENHANCE_DETECTION_PROMPTS, INPAINT_MASK_CLOTH_CATEGORY, INPUT_IMAGE_MODES, KSAMPLER, OUTPAINT_SELECTIONS, REFINER_SWAP_METHODS, SDXL_ASPECT_RATIOS, UPSCALE_OR_VARIATION_MODES, OutputFormat, Performance, ENHANCEMENT_UOV_BEFORE
+from h3_utils.flags import DESCRIBE_TYPE_PHOTO, ENHANCEMENT_UOV_PROMPT_TYPE_ORIGINAL, KSAMPLER_NAMES_LIT, OUTPUTFORMAT_LIT, REFINER_SWAP_METHODS, SCHEDULER_NAMES_CLS, SCHEDULER_NAMES_LITERAL, SDXL_ASPECT_RATIOS, SDXL_ASPECT_RATIOS_CLASS, UPSCALE_OR_VARIATION_MODES, Overrides, Steps
 from h3_utils.launch_args import METADATA_SCHEME, LAUNCH_ARGS
 import traceback
 
