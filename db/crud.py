@@ -5,8 +5,9 @@ import json
 from time import perf_counter
 from typing import Literal, Union
 
+from db.database import get_db_unmanaged
 from h3_utils.flags import OutputFormat
-from server.models_for_server import ImageGenerationObjectForRequests
+from h3_utils.config import ImageGenerationObjectForRequests
 
 
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -100,6 +101,36 @@ def update_imageorder_status(db: Session, order_id: UUIDType, status: pm.Generat
     except Exception as e:
         log.error(f"Error updating image order status: {e}")
         raise e
+    
+def update_imageorder_log(order_id: UUIDType, log_data: str) -> bool:
+    """Update the log of an image order
+
+    Args:
+        order_id (UUID): The ID of the image order
+        log_data (str): The log data
+        
+    Returns:
+        bool: True if successful 
+
+    Raises:
+        Exception: If an error occurs
+    """
+    db = get_db_unmanaged()
+    try:
+        order = db.query(sm.ImageOrder).filter(sm.ImageOrder.id == order_id).first()
+        order.log_dict = log_data
+        order.updated_at = get_timestamp()
+        db.commit()
+        db.close()
+        db = None
+        return True
+    except Exception as e:
+        log.error(f"Error updating image order log: {e}")
+        return False
+    finally:
+        log.debug("Closing db connection in update_imageorder_log")
+        if db is not None:
+            db.close()
     
 def get_imageorder(db: Session, order_id: UUIDType) -> pm.ImageOrderInResponse:
     """Get an image order from the database
