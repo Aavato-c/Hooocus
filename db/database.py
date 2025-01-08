@@ -16,11 +16,11 @@ import db.models.inmem_db_models as inmemModels
 
 logger = LoggingUtil(__name__).get_logger()
 
-engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
+engine = create_engine(DB_URL, pool_size=20, max_overflow=0, connect_args={"check_same_thread": False})
 
 in_mem_url = "sqlite:////run/shm/inmem.db"
 
-in_memory_engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
+in_memory_engine = create_engine(DB_URL, pool_size=20, max_overflow=0, connect_args={"check_same_thread": False})
 
 
 # Create a session object that will be used to interact with the database
