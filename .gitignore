@@ -89,3 +89,4 @@ tests/test_gen_to_server.py
 image_links.txt
 *.txt
 logs/imagen_logs/*.json
+memo.md
