@@ -1,12 +1,12 @@
 import os
 import sys
+sys.path.append(os.path.dirname(__file__).split("h3_utils")[0])
 
 from db import crud
 from h3_utils.model_file_config import controlnet_task_by_name
 
 
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 from pydantic_core import from_json
@@ -611,7 +611,6 @@ HooocusConfig = ImageGenerationObject(**current_preset)
 DefaultConfigImageGen = ImageGenerationObject(**DEFAULT_PRESET)
 
 
-""" 
-with open("hoocus_config.json", "w") as f:
 
-    f.write(HooocusConfig.model_dump_json()) """
+with open("hoocus_config.json", "w") as f:
+    json.dump(HooocusConfig.model_dump(), f, indent=4, ensure_ascii=False, sort_keys=True, default=str)
