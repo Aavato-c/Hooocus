@@ -611,6 +611,7 @@ HooocusConfig = ImageGenerationObject(**current_preset)
 DefaultConfigImageGen = ImageGenerationObject(**DEFAULT_PRESET)
 
 
-
+"""
 with open("hoocus_config.json", "w") as f:
     json.dump(HooocusConfig.model_dump(), f, indent=4, ensure_ascii=False, sort_keys=True, default=str)
+"""
