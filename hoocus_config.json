@@ -1,1 +1,118 @@
-{"uid":"","has_been_processed":false,"negative_prompt":"","prompt":"","read_wildcards_in_order":false,"width":null,"height":null,"sample_sharpness":2.0,"seed":3880082234290117096,"sampler_name":"dpmpp_2m_sde_gpu","scheduler_name":"karras","base_model_name":"juggernautXL_v8Rundiffusion.safetensors","refiner_model":false,"refiner_switch":0.5,"refiner_swap_method":"joint","loras":[[true,"None",0.1],[true,"None",1.0],[true,"None",1.0],[true,"None",1.0],[true,"None",1.0]],"styles":["Fooocus V2","Fooocus Enhance"],"vae_name":"Default (model)","performance_selection":"Speed","performance_loras":[],"previous_default_models":["juggernautXL_version8Rundiffusion.safetensors","juggernautXL_version7Rundiffusion.safetensors","juggernautXL_v7Rundiffusion.safetensors","juggernautXL_version6Rundiffusion.safetensors","juggernautXL_v6Rundiffusion.safetensors"],"output_format":"webp","save_metadata_to_images":false,"save_only_final_enhanced_image":false,"aspect_ratio":"832*1216","image_number":1,"steps":-1,"original_steps":0,"adaptive_cfg":7.0,"cfg_scale":3.0,"cfg_tsnr":7.0,"adm_scaler_end":0.3,"adm_scaler_negative":0.8,"adm_scaler_positive":1.5,"canny_high_threshold":128,"canny_low_threshold":64,"checkpoint_downloads":{"juggernautXL_v8Rundiffusion.safetensors":"https://huggingface.co/lllyasviel/fav_models/resolve/main/fav/juggernautXL_v8Rundiffusion.safetensors"},"vae_downloads":{},"lora_downloads":{},"embeddings_downloads":{},"clip_skip":2,"controlnet_softness":0.25,"dino_erode_or_dilate":0,"enhance_task":null,"freeu_controls":null,"inpaint_options":null,"controlnet_tasks":null,"overwrite_controls":null,"developer_options":{"metadata_created_by":"","metadata_scheme":"Hooocus","debugging_cn_preprocessor":false,"debugging_dino":false,"debugging_enhance_masks_checkbox":false,"debugging_inpaint_preprocessor":false,"temp_path_cleanup_on_launch":true,"temp_path":"/tmp/hooocus","disable_intermediate_results":false,"disable_seed_increment":false,"generate_grid":false,"disable_preview":false,"skipping_cn_preprocessor":false,"should_use_advanced":false,"should_use_developer_debug_mode":false},"describe_content_type":["Photograph"],"use_image_input":false,"use_image_prompt_advanced":false,"use_imageprompt":false,"use_upscale_or_vary":false,"mix_image_prompt_and_vary_upscale":false,"mix_image_prompt_and_inpaint":false,"image_input_mode":"uov","input_image":null,"uov_input_image":null,"input_mask_image":null,"prepared_input_mask_image":null,"enhance_input_image":null,"uov_method":null,"steps_uov":-1}
+{
+    "adaptive_cfg": 7.0,
+    "additional_style_lamdas": [],
+    "adm_scaler_end": 0.3,
+    "adm_scaler_negative": 0.8,
+    "adm_scaler_positive": 1.5,
+    "aspect_ratio": "1152*896",
+    "base_model_name": "juggernautXL_v8Rundiffusion.safetensors",
+    "canny_high_threshold": 128,
+    "canny_low_threshold": 64,
+    "cfg_scale": 4.0,
+    "cfg_tsnr": 7.0,
+    "checkpoint_downloads": {
+        "juggernautXL_v8Rundiffusion.safetensors": "https://huggingface.co/lllyasviel/fav_models/resolve/main/fav/juggernautXL_v8Rundiffusion.safetensors"
+    },
+    "clip_skip": 2,
+    "controlnet_softness": 0.25,
+    "controlnet_tasks": [],
+    "describe_content_type": [
+        "Photograph"
+    ],
+    "developer_options": {
+        "debugging_cn_preprocessor": false,
+        "debugging_dino": false,
+        "debugging_enhance_masks_checkbox": false,
+        "debugging_inpaint_preprocessor": false,
+        "disable_intermediate_results": false,
+        "disable_preview": false,
+        "disable_seed_increment": false,
+        "generate_grid": false,
+        "metadata_created_by": "",
+        "metadata_scheme": "Hooocus",
+        "should_use_advanced": false,
+        "should_use_developer_debug_mode": false,
+        "skipping_cn_preprocessor": false,
+        "temp_path": "/tmp/hooocus",
+        "temp_path_cleanup_on_launch": true
+    },
+    "dino_erode_or_dilate": 0,
+    "embeddings_downloads": {},
+    "enhance_input_image": null,
+    "enhance_task": null,
+    "freeu_controls": null,
+    "has_been_processed": false,
+    "height": null,
+    "image_input_mode": "uov",
+    "image_number": 1,
+    "inpaint_options": null,
+    "input_image": null,
+    "input_image_url": null,
+    "input_mask_image": null,
+    "lora_downloads": {},
+    "loras": [
+        [
+            true,
+            "None",
+            1.0
+        ],
+        [
+            true,
+            "None",
+            1.0
+        ],
+        [
+            true,
+            "None",
+            1.0
+        ],
+        [
+            true,
+            "None",
+            1.0
+        ],
+        [
+            true,
+            "None",
+            1.0
+        ]
+    ],
+    "mix_image_prompt_and_inpaint": false,
+    "mix_image_prompt_and_vary_upscale": false,
+    "negative_prompt": "",
+    "original_steps": false,
+    "output_format": "webp",
+    "overwrite_controls": null,
+    "performance_loras": [],
+    "performance_selection": "Performance.SPEED",
+    "prepared_input_mask_image": null,
+    "prepared_tasklets": null,
+    "processing_time": null,
+    "prompt": "",
+    "read_wildcards_in_order": false,
+    "refiner_model": false,
+    "refiner_swap_method": "joint",
+    "refiner_switch": 0.5,
+    "sample_sharpness": 2.0,
+    "sampler_name": "dpmpp_2m_sde",
+    "save_metadata_to_images": false,
+    "save_only_final_enhanced_image": false,
+    "scheduler_name": "karras",
+    "seed": 0,
+    "steps": -1,
+    "steps_uov": -1,
+    "styles": [
+        "Fooocus V2",
+        "Fooocus Enhance",
+        "Fooocus Sharp"
+    ],
+    "uid": "",
+    "uov_input_image": null,
+    "uov_method": null,
+    "use_image_prompt_advanced": false,
+    "use_imageprompt": false,
+    "use_upscale_or_vary": false,
+    "vae_downloads": {},
+    "vae_name": "Default (model)",
+    "width": null
+}
