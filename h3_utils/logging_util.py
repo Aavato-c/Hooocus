@@ -16,7 +16,7 @@ class LoggingUtil:
         formatter = logging.Formatter('%(levelname)s:%(asctime)s:%(module)s:%(lineno)d:\t%(message)s', datefmt='%m%d:%H:%M:%S')
         self.logger.setLevel(logging.DEBUG)
         
-        file_handler = RotatingFileHandler('logs/h3.log', maxBytes=150_000_000, backupCount=3) # 150 MB
+        file_handler = RotatingFileHandler('logs/h3_combined.log', maxBytes=150_000_000, backupCount=3, mode="a") # 150 MB
         file_handler.setLevel(LOGGING_LEVEL_FILE)
         file_handler.setFormatter(formatter)
         
