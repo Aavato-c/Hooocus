@@ -91,3 +91,6 @@ image_links.txt
 logs/imagen_logs/*.json
 memo.md
 logs/*
+wasteland
+.pytest_cache
+__cache__

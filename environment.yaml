@@ -1,7 +1,0 @@
-name: Hooocus
-channels:
-  - defaults
-dependencies:
-  - python=3.12
-  - pip=23.0
-  - packaging
