@@ -14,28 +14,13 @@ from h3_utils.flags import (
 
 log = LoggingUtil(__name__).get_logger()
 
-class GlobalEnv:
-    # NB! Do not store any sensitive information here. Use normal .env files for that.
-
-    PYTHONFAULTHANDLER=1
-
-    # launch.py
-    TRY_INSTALL_XFORMERS = False
-
-    PYTORCH_ENABLE_MPS_FALLBACK = 1
-    PYTORCH_MPS_HIGH_WATERMARK_RATIO = 0.0
-
-    def __init__(self, **data):
-        # Set the environment variables globally
-        super().__init__(**data)
-        for _key, value in data.items():
-            os.environ[_key] = str(value)
 
 
-HOOOCUS_VERSION = '0.5.1'
+
+
+
+HOOOCUS_VERSION = '0.5.2-alpha'
 METADATA_SCHEME = "Hooocus"
-
-PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
 class _LAUNCH_ARGS(BaseModel):
     # Modify the initial values here
