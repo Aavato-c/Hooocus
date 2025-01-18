@@ -55,6 +55,7 @@ class _LAUNCH_ARGS(BaseModel):
     always_download_new_model: bool = Field(False, description="Always download newer models.")
     rebuild_hash_cache: bool = Field(False, description="Generates missing model and LoRA hashes.")
     temp_path_cleanup_on_launch: bool = Field(True, description="The temp path cleanup on launch to use.")
+    should_check_for_updates = False
     
 
     
