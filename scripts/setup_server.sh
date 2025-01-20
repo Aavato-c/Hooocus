@@ -15,7 +15,7 @@ fi
 
 
 CURR_DIR=$(pwd)
-NAME=hoocus_server
+NAME=Hooocus_server
 
 
 if [ ! -f ".env" ]; then
@@ -38,7 +38,7 @@ fi
 
 sudo chown -R $USER $CURR_DIR/logs
 
-cat <<EOL > $CURR_DIR/gunicorn_start.sh
+cat <<EOL > $CURR_DIR/scripts/gunicorn_start.sh
 #!/bin/sh
 CURR_DIR_INSIDE=$CURR_DIR
 USER_INSIDE=$USER
@@ -58,7 +58,7 @@ cd \$CURR_DIR_INSIDE
 # source venv/bin/activate (If you have problems, use this instead of the one below)
 . venv/bin/activate
 
-exec gunicorn "server.main:main_entry('\$RANDOM_UUID')" \\
+exec gunicorn "modules.server.main:main_entry('\$RANDOM_UUID')" \\
 --name \$NAME_INSIDE \\
 --workers \$WORKERS \\
 --worker-class \$WORKER_CLASS \\
@@ -69,19 +69,19 @@ exec gunicorn "server.main:main_entry('\$RANDOM_UUID')" \\
 --log-file \$LOG_FILE
 EOL
 
-sudo chmod +x $CURR_DIR/gunicorn_start.sh
+sudo chmod +x $CURR_DIR/scripts/gunicorn_start.sh
 
 
 # Create supervisor config file
-sudo touch /etc/supervisor/conf.d/hoocus_server.conf
+sudo touch /etc/supervisor/conf.d/Hooocus_server.conf
 
 if [ ! -d "logs" ]; then
   mkdir logs
 fi
 
-sudo cat <<EOL > /etc/supervisor/conf.d/hoocus_server.conf
-[program:hoocus_server]
-    command=$CURR_DIR/gunicorn_start.sh
+sudo cat <<EOL > /etc/supervisor/conf.d/Hooocus_server.conf
+[program:Hooocus_server]
+    command=$CURR_DIR/scripts/gunicorn_start.sh
     user=$USER
     autostart=false
     autorestart=false
@@ -89,14 +89,14 @@ sudo cat <<EOL > /etc/supervisor/conf.d/hoocus_server.conf
     stdout_logfile=$CURR_DIR/logs/gunilog.log
 EOL
 
-sudo ln -s /etc/supervisor/conf.d/hoocus_server.conf $CURR_DIR/hoocus_server.conf
+sudo ln -s /etc/supervisor/conf.d/Hooocus_server.conf $CURR_DIR/scripts/Hooocus_server.conf
 
 # Start supervisor
 sudo service supervisor start
 sudo supervisorctl reread
 sudo supervisorctl update
-sudo supervisorctl start hoocus_server
-sudo supervisorctl status hoocus_server
+sudo supervisorctl start Hooocus_server
+sudo supervisorctl status Hooocus_server
 
 
 
