@@ -18,7 +18,6 @@ from h3_utils.logging_util import LoggingUtil
 log = LoggingUtil(__name__).get_logger()
 dotenv.load_dotenv(override=True)
 
-random_style_name = 'Random Style'
 
 DESCRIBE_TYPE_PHOTO = 'Photograph'
 DESCRIBE_TYPE_ANIME = 'Art/Anime'

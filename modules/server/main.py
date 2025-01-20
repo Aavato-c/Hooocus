@@ -1,7 +1,8 @@
 import os
 import sys
 
-ROOT_DIR = os.path.abspath(__file__).split("server")[0]
+
+ROOT_DIR = os.path.abspath(__file__).split("modules")[0]
 sys.path.append(ROOT_DIR)
 
 from typing import Annotated
@@ -10,6 +11,7 @@ import uvicorn
 from pprint import pprint as pp
 import traceback
 
+from modules.server.auth_handlers import verify_user
 from unavoided_globals import img_processor_globlal, shared
 
 from sqlalchemy.orm import Session
@@ -22,15 +24,15 @@ from db.models.pydantic_m import GenerationStates
 from db.database import get_db, get_temp_db
 from db import crud
 
-from imagen_main import generate_image_to_stream, yield_temps_if_streaming
+from modules.imagen_utils.imagen_main import generate_image_to_stream, yield_temps_if_streaming
 
-from consts import IMAGEN_BACKEND_PORT, IMAGEN_BACKEND_URL
+from consts import IMAGEN_BACKEND_PORT, IMAGEN_BACKEND_URL, SERVER_URL
 
 from h3_utils.path_configs import FolderPathsConfig
 from h3_utils.logging_util import LoggingUtil
 from h3_utils.config import ImageGenerationObject, ImageGenerationObjectForRequests
 
-from server.auth_handlers import verify_user
+
 
 log = LoggingUtil(__name__).get_logger()
 
@@ -121,7 +123,7 @@ def get_photo_genobject(_is_verified: Annotated[bool, Depends(verify_user)], req
             content={
                 "uuid": uuid_of_order,
                 "url": f"{SERVER_URL}/photo/{uuid_of_order}.webp",
-                "test_url": f"http://127.0.0.1:8111/photo/{uuid_of_order}.webp",
+                "test_url": f"{IMAGEN_BACKEND_URL}:{IMAGEN_BACKEND_PORT}/photo/{uuid_of_order}.webp",
             },
             status_code=201,
         )

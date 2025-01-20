@@ -1,6 +1,6 @@
 import sys, os
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, CURR_DIR.split("server")[0])
+sys.path.insert(0, CURR_DIR.split("modules")[0])
 
 from consts import ACCEPTED_API_TOKEN_FOR_IMAGE_GENERATION
 from h3_utils.logging_util import LoggingUtil

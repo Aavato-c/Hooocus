@@ -1,8 +1,8 @@
 import os
 import sys
-
 sys.path.append(os.path.dirname(__file__).split("h3_utils")[0])
 
+from h3_utils.sdxl_styles.prompt_styles import VALID_STYLE_NAMES, MetaStyles, PromptStyle
 
 from h3_utils.config_helpers import update_imageorder_log
 
@@ -63,21 +63,8 @@ current_preset = {}
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "outputs")
 CustomNDArrayType: TypeAlias = Union[NDArray, List[NDArray]]
 
-try:
-    with open(f"{PARENT_DIR}/presets/default.json", "r") as f:
-        DEFAULT_PRESET = json.load(f)
-        log.debug("Default preset loaded.")
-except FileNotFoundError:
-    raise FileNotFoundError("Could not find default preset file. Exiting.")
 
 
-try:
-    with open(f"{PARENT_DIR}/presets/{preset_chosen.lower()}.json", "r") as f:
-        log.debug(f"Loading preset file for {preset_chosen}.")
-        current_preset = json.load(f)
-except FileNotFoundError:
-    log.error(f"Could not find preset file for {preset_chosen}. Using default preset.")
-    current_preset = DEFAULT_PRESET
 
 
 class FilePathConfig:
@@ -266,10 +253,7 @@ class EnhanceMaskCtrls(BaseModel):
     )
 
 
-class LambdaStyle(BaseModel):
-    name: str
-    prompt: str
-    negative_prompt: str
+
 
 
 class BaseControlNetTaskForRequests(BaseModel):
@@ -330,12 +314,9 @@ class _InitialImageGenerationParams(BaseModel):
         description="The default LoRAs to use.",
     )
 
-    styles: List[str | LambdaStyle] = Field(
-        ["Fooocus V2", "Fooocus Sharp"], description="Style additions for prompts"
-    )
-    additional_style_lamdas: List[LambdaStyle] = Field(
-        [], description="The default additional style lamdas to use."
-    )
+    styles: List[Union[VALID_STYLE_NAMES | MetaStyles.ALL_NAMES ] ] = Field(["Fooocus_V2", "Fooocus_Sharp"], description="Style additions for prompts")
+    additional_style_objects: Optional[List[PromptStyle]] = []
+    
     seed: int = 0
     vae_name: str = Field("Default (model)", description="The default vae to use.")
 
@@ -391,8 +372,8 @@ class _InitialImageGenerationParams(BaseModel):
         64, description="The default canny low threshold to use.", ge=0, le=255
     )
 
-    checkpoint_downloads: dict[str, str] = Field(
-        DEFAULT_PRESET["checkpoint_downloads"],
+    checkpoint_downloads: Optional[dict[str, str]] = Field(
+        {},
         description="The default checkpoint downloads to use.",
     )
     vae_downloads: dict[str, str] = Field(
@@ -402,7 +383,7 @@ class _InitialImageGenerationParams(BaseModel):
         {}, description="The default lora downloads to use."
     )
     embeddings_downloads: dict[str, str] = Field(
-        DEFAULT_PRESET["embeddings_downloads"],
+        {},
         description="The default embeddings downloads to use.",
     )
 
@@ -480,7 +461,7 @@ class TaskletObject(BaseModel):
     negative_top_k: int = 0
     log_positive_prompt: str
     log_negative_prompt: str
-    styles: List[str]
+    styles: List[VALID_STYLE_NAMES | MetaStyles.ALL_NAMES_LIT] = []
 
 
 class ApplyImageInputParams(BaseModel):
@@ -516,14 +497,15 @@ class YieldObject(BaseModel):
 class ImageGenerationObject(_InitialImageGenerationParams):
     prepared_tasklets: Optional[TaskletObject] = None
     processing_time: Optional[float] = None
+    use_prompt_expansion: bool = True
 
     class Config:
         arbitrary_types_allowed = True
         from_attributes = True
 
     def init_style_lambdas(self):
-        if len(self.additional_style_lamdas) > 0:
-            self.styles.extend(self.additional_style_lamdas)
+        if len(self.additional_style_objects) > 0:
+            self.styles.extend(self.additional_style_objects)
 
     def save_log_json(self):
         while os.path.exists(f"{PARENT_DIR}/logs/imagen_logs/{self.uid}.json"):
@@ -580,12 +562,6 @@ class ImageGenerationObject(_InitialImageGenerationParams):
                 log.error(f"Could not save log: {e}")
 
     def _prepare_downloads(self):
-        self.checkpoint_downloads = (
-            self.checkpoint_downloads or DEFAULT_PRESET["checkpoint_downloads"]
-        )
-        self.embeddings_downloads = (
-            self.embeddings_downloads or DEFAULT_PRESET["embeddings_downloads"]
-        )
 
         self.vae_downloads = {}
 
@@ -628,11 +604,6 @@ class ImageGenerationObject(_InitialImageGenerationParams):
             file_name="pytorch_model.bin",
         )
 
-        load_file_from_url(
-            url="https://huggingface.co/lllyasviel/misc/resolve/main/fooocus_expansion.bin",
-            model_dir=FolderPathsConfig.path_fooocus_expansion,
-            file_name="pytorch_model.bin",
-        )
 
         if LAUNCH_ARGS.disable_preset_download:
             log.info("Skipped model download.")
@@ -682,6 +653,7 @@ class ImageGenerationObjectForRequests(BaseModel):
 
     uid: Optional[str] = ""
     has_been_processed: bool = False
+    use_prompt_expansion: bool = True
 
     negative_prompt: str = Field("", description="The default negative prompt to use.")
     prompt: Optional[str] = Field(None, description="The default prompt to use.")
@@ -721,8 +693,8 @@ class ImageGenerationObjectForRequests(BaseModel):
     )
     styles: List[str] = Field(
         [
-            "Fooocus V2",
-            "Fooocus Enhance",
+            "Fooocus_V2",
+            "Fooocus_Enhance",
         ],
         description="The default styles to use.",
     )
@@ -795,8 +767,7 @@ class ImageGenerationObjectForRequests(BaseModel):
     enhance_input_image: Optional[bool] = None
 
 
-HooocusConfig = ImageGenerationObject(**current_preset)
-DefaultConfigImageGen = ImageGenerationObject(**DEFAULT_PRESET)
+DefaultConfigImageGen = ImageGenerationObject()
 
 
 """

@@ -1,0 +1,52 @@
+upstream app_server {
+        server unix:/tmp/gunicorn_hoocus.sock fail_timeout=0;
+}
+
+server {
+        client_max_body_size 4G;
+        access_log /home/kake/Hooocus/logs/nginx-access.log;
+        error_log /home/kake/Hooocus/logs/nginx-error.log;
+        server_name xana.dramaturgi.fi www.xana.dramaturgi.fi;
+        keepalive_timeout 5;
+
+        location / {
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header Host $http_host;
+                proxy_redirect off;
+
+                if (!-f $request_filename) {
+                        proxy_pass http://app_server;
+                        break;
+                }
+        }
+
+    listen [::]:443 ssl ipv6only=on; # managed by Certbot
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/xana.dramaturgi.fi/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/xana.dramaturgi.fi/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+
+}
+server {
+    if ($host = www.<domain>.<tld>) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    if ($host = <domain>.<tld>) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+        listen 80;
+        listen [::]:80;
+
+        server_name <domain>.<tld> www.<domain>.<tld>;
+    return 404; # managed by Certbot
+
+
+
+
+}

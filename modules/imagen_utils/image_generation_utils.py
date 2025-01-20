@@ -16,13 +16,11 @@ from utils.sdxl_prompt_expansion_utils import (
     apply_style,
     get_random_style,
     apply_arrays,
-    random_style_name,
 )
 from utils.logging_util import LoggingUtil
 from utils.config import MAX_SEED, ImageGenerationObject, ImageGenerationSeed, PatchSettings
 
 from modules import default_pipeline as pipeline
-from modules.imagen_utils.private_logger import log
 from modules.core import encode_vae, numpy_to_pytorch
 from modules.util import (
     remove_empty_str,
@@ -45,153 +43,12 @@ import extras.face_crop
 from extras.censor import default_censor
 from extras.expansion import safe_str
 
-from unavoided_global_vars import patch_settings_GLOBAL_CAUTION, opModelSamplingContinuousEDM
 from wasteland import meta_parser
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 
 
-def log(
-    async_task: ImageGenerationSeed,
-    height: int,
-    imgs: List[np.ndarray],
-    task: dict,
-    use_expansion: bool,
-    width: int,
-    loras: List[tuple],
-    persist_image: bool = True,
-    fooocus_expansion: str = None,
-    pid: int = 0,
-) -> List[str]:
-    """Save images and log metadata.
-
-    Args:
-        async_task (ImageGenerationSeed): The asynchronous task object.
-        height (int): The height of the image.
-        imgs (List[np.ndarray]): List of images to save.
-        task (dict): Task details.
-        use_expansion (bool): Whether to use expansion.
-        width (int): The width of the image.
-        loras (List[tuple]): List of LoRA configurations.
-        persist_image (bool, optional): Whether to persist the image. Defaults to True.
-        fooocus_expansion (str, optional): Fooocus expansion details. Defaults to None.
-        pid (int, optional): Process ID. Defaults to 0.
-
-    Returns:
-        List[str]: List of image paths.
-    """
-    img_paths = []
-    for x in imgs:
-        d = generate_metadata_dict(async_task, task, use_expansion, fooocus_expansion, width, height, loras, pid)
-        metadata_parser = create_metadata_parser(async_task, task, loras)
-        img_paths.append(
-            log(
-                x,
-                async_task.path_outputs,
-                d,
-                metadata_parser,
-                async_task.output_format,
-                task,
-                persist_image,
-            )
-        )
-    return img_paths
-
-def generate_metadata_dict(async_task, task, use_expansion, fooocus_expansion, width, height, loras, pid):
-    """Generate metadata dictionary for logging."""
-    d = [
-        ("Prompt", "prompt", task["log_positive_prompt"]),
-        ("Negative Prompt", "negative_prompt", task["log_negative_prompt"]),
-        ("Fooocus V2 Expansion", "prompt_expansion", task["expansion"]),
-        (
-            "Styles",
-            "styles",
-            str(
-                task["styles"]
-                if not use_expansion
-                else [fooocus_expansion] + task["styles"]
-            ),
-        ),
-        ("Performance", "performance", async_task.performance_selection.value),
-        ("Steps", "steps", async_task.steps),
-        ("Resolution", "resolution", str((width, height))),
-        ("Guidance Scale", "guidance_scale", async_task.cfg_scale),
-        ("Sharpness", "sharpness", async_task.sharpness),
-        (
-            "ADM Guidance",
-            "adm_guidance",
-            str(
-                (
-                    patch.patch_settings[pid].positive_adm_scale,
-                    patch.patch_settings[pid].negative_adm_scale,
-                    patch.patch_settings[pid].adm_scaler_end,
-                )
-            ),
-        ),
-        ("Base Model", "base_model", async_task.base_model_name),
-        ("Refiner Model", "refiner_model", async_task.refiner_model_name),
-        ("Refiner Switch", "refiner_switch", async_task.refiner_switch),
-    ]
-
-    if async_task.refiner_model_name != "None":
-        if async_task.overwrite_switch > 0:
-            d.append(
-                (
-                    "Overwrite Switch",
-                    "overwrite_switch",
-                    async_task.overwrite_switch,
-                )
-            )
-        if async_task.refiner_swap_method != flags.refiner_swap_method:
-            d.append(
-                (
-                    "Refiner Swap Method",
-                    "refiner_swap_method",
-                    async_task.refiner_swap_method,
-                )
-            )
-    if (
-        patch.patch_settings[pid].adaptive_cfg
-        != config.default_cfg_tsnr
-    ):
-        d.append(
-            (
-                "CFG Mimicking from TSNR",
-                "adaptive_cfg",
-                patch.patch_settings[pid].adaptive_cfg,
-            )
-        )
-
-    if async_task.clip_skip > 1:
-        d.append(("CLIP Skip", "clip_skip", async_task.clip_skip))
-    d.append(("Sampler", "sampler", async_task.sampler_name))
-    d.append(("Scheduler", "scheduler", async_task.scheduler_name))
-    d.append(("VAE", "vae", async_task.vae_name))
-    d.append(("Seed", "seed", str(task["task_seed"])))
-
-    if async_task.freeu_enabled:
-        d.append(
-            (
-                "FreeU",
-                "freeu",
-                str(
-                    (
-                        async_task.freeu_b1,
-                        async_task.freeu_b2,
-                        async_task.freeu_s1,
-                        async_task.freeu_s2,
-                    )
-                ),
-            )
-        )
-
-    for li, (n, w) in enumerate(loras):
-        if n != "None":
-            d.append(
-                (f"LoRA {li + 1}", f"lora_combined_{li + 1}", f"{n} : {w}")
-            )
-    return d
 
 def create_metadata_parser(async_task, task, loras):
     """Create a metadata parser if needed."""

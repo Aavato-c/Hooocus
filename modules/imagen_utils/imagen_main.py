@@ -1,23 +1,19 @@
 import base64
-from calendar import c
 import io
 import json
-import os
-from re import L
 from typing import Literal, final
 import cv2
 from numpy import ndarray
 from db import crud
 from db.database import get_db, get_db_inmem, get_db_unmanaged
 from db.models.pydantic_m import GenerationStates
-from h3_utils.flags import Performance
 from modules.async_worker import ImageTaskProcessor
 from unavoided_globals.img_processor_globlal import create_image_processor
 
 from PIL import Image, ImageDraw, ImageFont
 from h3_utils.logging_util import LoggingUtil
 import time
-from h3_utils.config import LAUNCH_ARGS, HooocusConfig, ImageGenerationObject, OverWriteControls, YieldObject
+from h3_utils.config import ImageGenerationObject, DefaultConfigImageGen
 
 log = LoggingUtil(__name__).get_logger()
 
@@ -162,7 +158,7 @@ def generate_image_to_stream(
         if not imgProcessor:
             raise Exception('Image processor not created.')
         
-    normal_template = HooocusConfig
+    normal_template = DefaultConfigImageGen
     gentask = json.loads(seed_generation_task.generation_data)
     newtask = ImageGenerationObject(**gentask)
     if newtask.uid != unique_id:

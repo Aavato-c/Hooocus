@@ -3,12 +3,9 @@
 from asyncio import tasks
 import copy
 import datetime
-from operator import is_
 import os
 import random
-import re
 import sys
-import threading
 import traceback
 from typing import Dict, List, Optional
 
@@ -18,15 +15,13 @@ import PIL.Image
 import numpy as np
 import time
 
-from torch import Tensor, tensor
+from torch import Tensor
 import torch
 
 from h3_utils.filesystem_utils import download_image_from_url
 from h3_utils.path_configs import FolderPathsConfig
-from ldm_patched.modules import controlnet
-from ldm_patched.modules.clip_vision import ClipVisionModel
+from h3_utils.sdxl_styles.prompt_styles import MetaStyles
 from modules.imagen_utils.imagen_patch_utils.patch import patch_all
-from unavoided_globals import unavoided_global_vars
 from extras import face_crop, preprocessors
 from extras.expansion import safe_str
 from extras.censor import default_censor
@@ -59,13 +54,12 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import h3_utils.config as config
 import h3_utils.flags as flags
 from h3_utils.logging_util import LoggingUtil
-from h3_utils.sdxl_prompt_expansion_utils import apply_arrays, apply_style, fooocus_expansion, get_random_style
+from h3_utils.sdxl_styles.sdxl_prompt_expansion_utils import apply_arrays, apply_style, get_random_style
 from h3_utils.flags import CONTROLNET_TASK_TYPES_CLASS, LORA_FILENAMES, Overrides, Performance, Steps
 
 import extras.ip_adapter as ip_adapter
 
 from modules.util import apply_wildcards, ensure_three_channels, erode_or_dilate, get_image_shape_ceil, get_shape_ceil, parse_lora_references_from_prompt, remove_empty_str, remove_performance_lora, resample_image, resize_image, set_image_shape_ceil
-from modules.imagen_utils.private_logger import log
 from modules.default_pipeline import DefaultPipeline
 from modules.core import apply_controlnet, apply_freeu, encode_vae, numpy_to_pytorch
 
@@ -286,7 +280,7 @@ class ImageTaskProcessor:
                 raise EarlyReturnException()
             
 
-        if len(_self.generation_task.controlnet_tasks) > 0:
+        if _self.generation_task.controlnet_tasks:
             _encoded_positive_cond, _encoded_negative_cond = _self.get_conditions_from_input_img_controlnet(prepared_task.encoded_positive_cond, prepared_task.encoded_negative_cond)
             prepared_task.encoded_positive_cond = _encoded_positive_cond
             prepared_task.encoded_negative_cond = _encoded_negative_cond
@@ -406,7 +400,7 @@ class ImageTaskProcessor:
 
     # OK
     def get_conditions_from_input_img_controlnet(self, positive_cond, negative_cond):
-        if len(self.generation_task.controlnet_tasks) > 0:
+        if self.generation_task.controlnet_tasks:
             for controlnet_task in self.generation_task.controlnet_tasks:
                 if controlnet_task.name in [ControlNetTasks.CPDS.name, ControlNetTasks.PyraCanny.name]:
                     positive_cond, negative_cond = apply_controlnet(
@@ -542,7 +536,7 @@ class ImageTaskProcessor:
             placeholder_replaced = False
             for j, s in enumerate(task_styles):
                 if isinstance(self.generation_task.styles, str):
-                    if s == flags.random_style_name:
+                    if s == MetaStyles.Random_style.name:
                         s = get_random_style(task_rng)
                         task_styles[j] = s
                     p, n, style_has_placeholder = apply_style(s, positive=task_prompt)
@@ -679,7 +673,7 @@ class ImageTaskProcessor:
         self.preparation_start_time = time.perf_counter()
         self.initialize_current_task(task)
 
-        if len(self.generation_task.controlnet_tasks) > 0:
+        if self.generation_task.controlnet_tasks:
             cn_tasks_validated = []
             for controlnet_task in self.generation_task.controlnet_tasks:
                 cn_tasks_validated.append(BaseControlNetTask(**controlnet_task))
@@ -691,8 +685,8 @@ class ImageTaskProcessor:
 
 
 
-
-        self.prepare_controlnet_models()
+        if self.generation_task.controlnet_tasks:
+            self.prepare_controlnet_models()
         
         apply_patch_settings(self.pid, task)
 
@@ -731,8 +725,6 @@ class ImageTaskProcessor:
             ) = self.apply_upscale()
             if direct_return:
                 d = [('Upscale (Fast)', 'upscale_fast', '2x')]
-                # TODO: Ensure log works
-                # self.uov_input_image_path = log(task.uov_input_image, d, output_format=task.output_format)
                 self.yield_result([task.uov_input_image])
                 return
 
@@ -744,7 +736,7 @@ class ImageTaskProcessor:
              height, 
              current_progress) = apply_inpaint() """
 
-        if len(self.generation_task.controlnet_tasks) > 0:
+        if self.generation_task.controlnet_tasks:
             self.apply_control_nets()
             if task.developer_options.debugging_cn_preprocessor:
                 return
@@ -883,7 +875,7 @@ class ImageTaskProcessor:
         if task.input_image == None and task.input_image_url != None:
             task.input_image = download_image_from_url(task.input_image_url)
 
-        if len(task.controlnet_tasks) > 0:
+        if task.controlnet_tasks:
             for controlnet_task in task.controlnet_tasks:
                 if controlnet_task.image_url != None:
                     controlnet_task.img = download_image_from_url(controlnet_task.image_url)
@@ -1071,9 +1063,8 @@ class ImageTaskProcessor:
 
         if task.enhance_task:
             task.enhance_task.enhance_uov_method = task.enhance_task.enhance_uov_method.lower()
-        if fooocus_expansion in task.styles:
+        if task.use_prompt_expansion:
             self.use_prompt_expansion = True 
-            task.styles.remove(fooocus_expansion)
 
         task.aspect_ratio = task.aspect_ratio.split('*')
         task.aspect_ratio = [int(x) for x in task.aspect_ratio]

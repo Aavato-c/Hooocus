@@ -94,3 +94,5 @@ logs/*
 wasteland
 .pytest_cache
 __cache__
+tests/test_rest.rest
+test.webp

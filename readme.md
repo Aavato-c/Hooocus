@@ -3,11 +3,12 @@
 <img src="https://github.com/Aavato-c/Hooocus/blob/main/media/logo2.png">
 </div>
 
-### A *H*eadless variant of Fooocus
+### A *H*eadless Stable diffusion backend 
 
-`v. 0.5.1`
+`V. 0.5.2-alpha`
 
-> **This project is very much in a development phase. If you're just looking for a way to create images, use [the original Fooocus](https://github.com/lllyasviel/Fooocus).**
+> **This project is in development phase and bugs are expected. You can raise an issue if you find one or have other questions.**
+ The backend is LDM If you're just looking for a way to create images, use [the original Fooocus](https://github.com/lllyasviel/Fooocus).**
 
 Hooocus (H3) is a headless variant of [Fooocus](https://github.com/lllyasviel/Fooocus), a wonderful creation started by [lllyasviel](https://github.com/lllyasviel)
 

@@ -305,6 +305,17 @@ SDXL_LCM_LoRA = _BaseModelFile(
 )
 
 
+class CheckPoints:
+    class _CheckPointFile(_BaseModelFile):
+        folder_path_of_model: str = FolderPathsConfig.path_checkpoints
+
+    JuggernautXL_v8 = _CheckPointFile(
+        name_of_model = 'juggernautXL_v8Rundiffusion.safetensors',
+        url_of_model = 'https://huggingface.co/lllyasviel/fav_models/resolve/main/fav/juggernautXL_v8Rundiffusion.safetensors',
+        basename_of_model = 'juggernautXL_v8Rundiffusion.safetensors'
+    )
+
+
 class AllModelFiles:
 
     BaseModel = _BaseModelFile()
@@ -316,5 +327,6 @@ class AllModelFiles:
     ControlNetModels = [ControlNetTasks.ImagePrompt.all_models, ControlNetTasks.FaceSwap.all_models, ControlNetTasks.PyraCanny.all_models, ControlNetTasks.CPDS.all_models]
     InpaintModels = InpaintModelFiles()
     SAM_Files = SAM_Files
+    CheckPoints = CheckPoints.JuggernautXL_v8
     
 
