@@ -1,5 +1,6 @@
 import os
 import sys
+
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(PARENT_DIR)
 
@@ -15,35 +16,46 @@ from h3_utils.flags import (
 log = LoggingUtil(__name__).get_logger()
 
 
-
-
-
-
-HOOOCUS_VERSION = '0.5.2-alpha'
+HOOOCUS_VERSION = "0.5.2-alpha"
 METADATA_SCHEME = "Hooocus"
+
 
 class _LAUNCH_ARGS(BaseModel):
     # Modify the initial values here
     class Config:
         arbitrary_types_allowed = True
 
-   
     # General args
-    enable_auto_describe_image: bool = Field(False, description="Enables automatic description of uov and enhance image when prompt is empty.")
+    enable_auto_describe_image: bool = Field(
+        False,
+        description="Enables automatic description of uov and enhance image when prompt is empty.",
+    )
     preview_option: LatentPreviewMethod = LatentPreviewMethod.Auto
     wildcards_max_bfs_depth: int = 64
-    disable_image_log: bool = Field(False, description="Prevent writing images and logs to the outputs folder.")
+    disable_image_log: bool = Field(
+        False, description="Prevent writing images and logs to the outputs folder."
+    )
     disable_analytics: bool = Field(False, description="Disables analytics for Gradio.")
-    disable_metadata: bool = Field(False, description="Disables saving metadata to images.")
-    disable_preset_download: bool = Field(False, description="Disables downloading models for presets.")
-    disable_enhance_output_sorting: bool = Field(False, description="Disables enhance output sorting for final image gallery.")
-    always_download_new_model: bool = Field(False, description="Always download newer models.")
-    rebuild_hash_cache: bool = Field(False, description="Generates missing model and LoRA hashes.")
-    temp_path_cleanup_on_launch: bool = Field(True, description="The temp path cleanup on launch to use.")
+    disable_metadata: bool = Field(
+        False, description="Disables saving metadata to images."
+    )
+    disable_preset_download: bool = Field(
+        False, description="Disables downloading models for presets."
+    )
+    disable_enhance_output_sorting: bool = Field(
+        False, description="Disables enhance output sorting for final image gallery."
+    )
+    always_download_new_model: bool = Field(
+        False, description="Always download newer models."
+    )
+    rebuild_hash_cache: bool = Field(
+        False, description="Generates missing model and LoRA hashes."
+    )
+    temp_path_cleanup_on_launch: bool = Field(
+        True, description="The temp path cleanup on launch to use."
+    )
     should_check_for_updates: bool = False
-    
 
-    
     # Etc
     web_upload_size: float = 100.0
     hf_mirror: str = "https://huggingface.co"
@@ -64,7 +76,6 @@ class _LAUNCH_ARGS(BaseModel):
     disable_ipex_hijack: bool = False
     disable_xformers: bool = False
     pytorch_deterministic: bool = False
-    
 
     # CMD args
     async_cuda_allocation: bool = False
