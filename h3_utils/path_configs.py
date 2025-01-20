@@ -20,6 +20,7 @@ class FolderPathsConfig:
     path_wildcards = "./wildcards/"
     path_safety_checker = "./models/safety_checker/"
     path_sam = "./models/sam/"
+    path_prompt_style_samples = "./sdxl_styles/samples/"
     
     default_temp_path = os.path.join(tempfile.gettempdir(), 'hooocus')
     path_outputs: str = "outputs" # Don't use a dot here
@@ -38,6 +39,7 @@ class _EnumFolderPaths(Enum):
     path_wildcards = "./wildcards/"
     path_safety_checker = "./models/safety_checker/"
     path_sam = "./models/sam/"
+    path_prompt_style_samples = "./sdxl_styles/samples/"
     
     default_temp_path = os.path.join(tempfile.gettempdir(), 'hooocus')
     path_outputs: str = "./outputs"
