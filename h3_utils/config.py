@@ -6,8 +6,7 @@ from db import crud
 from h3_utils.model_file_config import controlnet_task_by_name
 
 
-
-
+from h3_utils.config_helpers import update_imageorder_log
 
 from pydantic_core import from_json
 from torch import Tensor
@@ -392,7 +391,7 @@ class ImageGenerationObject(_InitialImageGenerationParams):
         try:
             self.performance_selection = self.performance_selection.name
             json_model = self.model_dump_json()
-            if crud.update_imageorder_log(self.uid, json_model):
+            if update_imageorder_log(self.uid, json_model):
                 log.info(f"Saved log for {self.uid}.")
             else:
                 log.error(f"Could not save log for {self.uid}.")
