@@ -1,34 +1,36 @@
 import os
 import sys
-from typing import Annotated
-from uuid import uuid4
-from fastapi.exceptions import RequestValidationError
-import starlette.exceptions
-import uvicorn
-from pprint import pprint as pp
-import traceback
+
 ROOT_DIR = os.path.abspath(__file__).split("server")[0]
 sys.path.append(ROOT_DIR)
 
-from db.models.pydantic_m import GenerationStates
-from h3_utils.flags import SDXL_ASPECT_RATIOS_CLASS
-from h3_utils.path_configs import FolderPathsConfig
-from server.auth_handlers import verify_user
+from typing import Annotated
+from uuid import uuid4
+import uvicorn
+from pprint import pprint as pp
+import traceback
+
+from unavoided_globals import img_processor_globlal, shared
 
 from sqlalchemy.orm import Session
 
 from fastapi import FastAPI, HTTPException, Request, Response, Depends
 from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
+from fastapi.exceptions import RequestValidationError
 
+from db.models.pydantic_m import GenerationStates
 from db.database import get_db, get_temp_db
 from db import crud
 
 from imagen_main import generate_image_to_stream, yield_temps_if_streaming
 
+from consts import IMAGEN_BACKEND_PORT, IMAGEN_BACKEND_URL
+
+from h3_utils.path_configs import FolderPathsConfig
 from h3_utils.logging_util import LoggingUtil
 from h3_utils.config import ImageGenerationObject, ImageGenerationObjectForRequests
 
-from unavoided_globals import img_processor_globlal, shared
+from server.auth_handlers import verify_user
 
 log = LoggingUtil(__name__).get_logger()
 
@@ -37,9 +39,7 @@ log = LoggingUtil(__name__).get_logger()
     
 app = FastAPI()
 
-SERVER_URL = os.environ.get("SERVER_URL", None)
-
-if SERVER_URL is None:
+if IMAGEN_BACKEND_URL is None:
     log.error("SERVER_URL is not set.")
     exit(1)
 
@@ -143,4 +143,4 @@ def main_entry(process_uuid = None, max_processes = 4):
 
 if __name__ == "__main__":
     app = main_entry("RANDOM_UUID")
-    uvicorn.run(app, port=8111) # uvicorn server.main:app --reload --port 8111
+    uvicorn.run(app, port=IMAGEN_BACKEND_PORT) # uvicorn server.main:app --reload --port 8111
