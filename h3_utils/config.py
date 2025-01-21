@@ -64,6 +64,9 @@ OUTPUT_DIR = os.getenv("OUTPUT_DIR", "outputs")
 CustomNDArrayType: TypeAlias = Union[NDArray, List[NDArray]]
 
 
+BaseModel.model_config = {
+    "arbitrary_types_allowed": True,
+}
 
 
 
@@ -314,7 +317,7 @@ class _InitialImageGenerationParams(BaseModel):
         description="The default LoRAs to use.",
     )
 
-    styles: List[Union[VALID_STYLE_NAMES | MetaStyles.ALL_NAMES ] ] = Field(["Fooocus_V2", "Fooocus_Sharp"], description="Style additions for prompts")
+    styles: List[Union[VALID_STYLE_NAMES | METASTYLES_LIT ] ] = Field(["Fooocus_V2", "Fooocus_Sharp"], description="Style additions for prompts")
     additional_style_objects: Optional[List[PromptStyle]] = []
     
     seed: int = 0
@@ -461,7 +464,7 @@ class TaskletObject(BaseModel):
     negative_top_k: int = 0
     log_positive_prompt: str
     log_negative_prompt: str
-    styles: List[VALID_STYLE_NAMES | MetaStyles.ALL_NAMES_LIT] = []
+    styles: List[VALID_STYLE_NAMES | METASTYLES_LIT] = []
 
 
 class ApplyImageInputParams(BaseModel):
@@ -500,7 +503,6 @@ class ImageGenerationObject(_InitialImageGenerationParams):
     use_prompt_expansion: bool = True
 
     class Config:
-        arbitrary_types_allowed = True
         from_attributes = True
 
     def init_style_lambdas(self):
@@ -513,30 +515,15 @@ class ImageGenerationObject(_InitialImageGenerationParams):
 
         try:
             with open(f"{PARENT_DIR}/logs/imagen_logs/{self.uid}.json", "w") as f:
-                self.performance_selection = self.performance_selection.name
                 json_model = self.model_dump()
+                json_model['performance_selection'] = self.performance_selection.value
                 json.dump(json_model, f, indent=4, ensure_ascii=False)
         except Exception as e:
             if "serialization" in str(e):
                 log.error("Could not serialize model.")
 
-                for key, value in self.dict().items():
-                    try:
-                        json.dumps({key: value})
-                    except Exception as e:
-                        log.error(f"Could not serialize {key} with value {value}.")
-                        # Delete the key
-                        self.__delattr__(key)
-                try:
-                    self.save_log()
-                except Exception as e:
-                    log.error("Could not save log.")
-            else:
-                log.error(f"Could not save log: {e}")
-
     def save_log(self):
         try:
-            self.performance_selection = self.performance_selection.name
             json_model = self.model_dump_json()
             if update_imageorder_log(self.uid, json_model):
                 log.info(f"Saved log for {self.uid}.")
@@ -701,7 +688,12 @@ class ImageGenerationObjectForRequests(BaseModel):
 
     vae_name: str = Field("Default (model)", description="The default vae to use.")
 
-    performance_selection: Performance = Performance.SPEED
+    performance_selection: Performance | str = Performance.SPEED.value
+    @field_validator("performance_selection", mode="before")
+    def validate_performance_selection_by_name(cls, v):
+        if isinstance(v, str):
+            return Performance(v)
+        return v
 
     # Format and save options
     output_format: OUTPUTFORMAT_LIT = Field(

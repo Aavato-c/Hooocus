@@ -225,12 +225,27 @@ class OutputFormat:
 
 OUTPUTFORMAT_LIT = Literal["png", "jpeg", "webp"]
 
+
+
+class RETURN_FORMATS:
+    json = "json"
+    image = "image"
+    src_for_img_as_html = "src_for_img_as_html"
+    src_for_img_as_json = "src_for_img_as_json"
+
+    LIT = Literal["json", "image", "src_for_img_as_html", "src_for_img_as_json"]
+
+
 class PerformanceLoRA(_AvailableConfigsBase):
     QUALITY = None
     SPEED = None
     EXTREME_SPEED = 'sdxl_lcm_lora.safetensors'
     LIGHTNING = 'sdxl_lightning_4step_lora.safetensors'
     HYPER_SD = 'sdxl_hyper_sd_4step_lora.safetensors'
+
+performance_lora_keys = PerformanceLoRA.__members__.keys()
+
+
 
 class Steps(IntEnum):
     QUALITY = 60
@@ -256,6 +271,8 @@ class Performance(_AvailableConfigsBase):
     EXTREME_SPEED = 'Extreme Speed'
     LIGHTNING = 'Lightning'
     HYPER_SD = 'Hyper-SD'
+
+    LIT = Literal["Quality", "Speed", "Extreme Speed", "Lightning", "Hyper-SD"]
 
     @classmethod
     def list(cls) -> list:
@@ -283,6 +300,8 @@ class Performance(_AvailableConfigsBase):
 
     def lora_filename(self) -> str | None:
         return PerformanceLoRA[self.name].value if self.name in PerformanceLoRA.__members__ else None
+    
+performance_keys = Performance.__members__.keys()
 
 
 INPAINT_ENGINE_VERSIONS = Literal["1.0", "2.5", "2.6"]
@@ -292,5 +311,3 @@ LORA_FILENAMES = get_model_filenames(FolderPathsConfig.path_loras)
 VAE_FILENAMES = get_model_filenames(FolderPathsConfig.path_vae)
 WILDCARD_FILENAMES = get_files_from_folder(FolderPathsConfig.path_wildcards, ['.txt'])
 
-performance_lora_keys = PerformanceLoRA.__members__.keys()
-performance_keys = Performance.__members__.keys()
