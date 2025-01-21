@@ -76,11 +76,6 @@ BaseModel.model_config = {
 
 
 
-class FilePathConfig:
-    config_path = "h3_utils/config.json"
-    hash_cache_path = f"{PARENT_DIR}/__cache__/hash_cache.json"
-    auth_filename = "auth.json"
-
 
 class FreeUControls(BaseModel):
     class Config:
@@ -90,6 +85,7 @@ class FreeUControls(BaseModel):
     freeu_b2: float = Field(1.02, le=2.0, ge=0.0)
     freeu_s1: float = Field(0.99, le=2.0, ge=0.0)
     freeu_s2: float = Field(0.95, le=2.0, ge=0.0)
+
 
 
 class OverWriteControls(BaseModel):

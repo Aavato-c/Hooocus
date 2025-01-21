@@ -1,6 +1,6 @@
 import os, sys
-rootdir = os.path.abspath(__file__).split("Hooocus")[0]+"Hooocus"
-sys.path.append(rootdir)
+ROOT_DIR = os.path.abspath(__file__).split("Hooocus")[0]+"Hooocus"
+sys.path.append(ROOT_DIR)
 
 
 from enum import Enum
@@ -26,6 +26,9 @@ class FolderPathsConfig:
     path_safety_checker = "./models/safety_checker/"
     path_sam = "./models/sam/"
     path_prompt_style_samples = "./modules/sdxl_styles/samples/"
+    config_path = "h3_utils/config.json"
+    hash_cache_path = f"{ROOT_DIR}/__cache__/hash_cache.json"
+    auth_filename = "auth.json"
     
     default_temp_path = os.path.join(tempfile.gettempdir(), 'hooocus')
     path_outputs: str = "outputs" # Don't use a dot here
