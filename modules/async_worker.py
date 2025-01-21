@@ -216,10 +216,7 @@ class ImageTaskProcessor:
         self.prepare_attributes()
 
 
-    def yield_result(self, imgs: list, do_not_show_finished_images=False):
-        """Processes a list of images, optionally censors NSFW content, and updates the results."""
-        imgs = self.censor_images_if_needed(imgs)
-        self.results += imgs
+
 
     def reset_cuda_memory(self):
         """Resets the CUDA memory."""
@@ -228,8 +225,8 @@ class ImageTaskProcessor:
     # OK
     def censor_images_if_needed(self, imgs: list) -> list:
         """Censors NSFW content in images if the configuration requires it."""
-        if GlobalConfig.black_out_nsfw:
-            self.update_progress("Censoring NSFW content")
+        if self.generation_task.black_out_nsfw:
+            logger.info(f"Censoring {len(imgs)} images ...")
             imgs = default_censor(imgs)
         return imgs
 
@@ -428,6 +425,9 @@ class ImageTaskProcessor:
             imgs = [self.inpaint_worker.post_process(x) for x in imgs]
         else:
             logger.debug("No inpaint worker available, skipping post-processing")
+
+        imgs = self.censor_images_if_needed(imgs)
+        
         return imgs
 
     # OK
@@ -732,7 +732,15 @@ class ImageTaskProcessor:
             ) = self.apply_upscale()
             if direct_return:
                 d = [('Upscale (Fast)', 'upscale_fast', '2x')]
-                self.yield_result([task.uov_input_image])
+                self.yields[task.uid].append(
+                    config.YieldObject(
+                        yield_type='message',
+                        progress=100,
+                        message='Task finished ...',
+                        image=None,
+                        uid=task.uid
+                    )
+                )
                 return
 
         if 'inpaint' in self.goals:
@@ -761,7 +769,15 @@ class ImageTaskProcessor:
             task.height, task.width, _ = task.enhance_input_image.shape
             # input image already provided, processing is skipped
             self.generation_task.steps = 0
-            self.yield_result([self.generation_task.enhance_input_image])
+            self.yields[task.uid].append(
+                config.YieldObject(
+                    yield_type='message',
+                    progress=100,
+                    message='Task finished ...',
+                    image=None,
+                    uid=task.uid
+                )
+            )
 
         if task.enhance_task:
             enhance_ctrl = task.enhance_task

@@ -1,4 +1,5 @@
 import os
+import typing_extensions
 
 import numpy as np
 import torch
@@ -7,6 +8,7 @@ from transformers import CLIPConfig, CLIPImageProcessor
 import ldm_patched.modules.model_management as model_management
 import h3_utils.config
 from extras.safety_checker.models.safety_checker import StableDiffusionSafetyChecker
+from modules.model_file_utils.model_file_config import SafetyCheckModel
 from ldm_patched.modules.model_patcher import ModelPatcher
 
 safety_checker_repo_root = os.path.join(os.path.dirname(__file__), 'safety_checker')
@@ -23,7 +25,9 @@ class Censor:
 
     def init(self):
         if self.safety_checker_model is None and self.clip_image_processor is None:
-            safety_checker_model = h3_utils.config.downloading_safety_checker_model()
+            
+            safety_checker_model = SafetyCheckModel.download_model()
+            
             self.clip_image_processor = CLIPImageProcessor.from_json_file(preprocessor_config_path)
             clip_config = CLIPConfig.from_json_file(config_path)
             model = StableDiffusionSafetyChecker.from_pretrained(safety_checker_model, config=clip_config)
