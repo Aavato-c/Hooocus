@@ -1,8 +1,16 @@
 import os
 import logging
 import dotenv
+from h3_utils.init_h3_instance import init_launch
+
+if os.environ.get("H3_INSTANCE_INIT") != "1":
+    init_launch()
+    os.environ["H3_INSTANCE_INIT"] = "1"
+
 
 dotenv.load_dotenv(override=True)
+
+SHOULD_LOG_PERFORMANCE = True
 
 
 SERVER_URL = os.environ.get("SERVER_URL")

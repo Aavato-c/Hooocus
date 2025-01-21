@@ -19,6 +19,22 @@ log = LoggingUtil(__name__).get_logger()
 dotenv.load_dotenv(override=True)
 
 
+# For YieldObject
+yield_types = Literal["preview", "result", "waiting", "uri", "finish", "starting", "meta"]
+class YIELD_TYPE_FLAGS:
+    preview = "preview"
+    result = "result"
+    waiting = "waiting"
+    uri = "uri"
+    finish = "finish"
+    starting = "starting"
+    meta = "meta"
+    
+
+MIN_SEED = 0
+MAX_SEED = 2**63-1
+
+
 DESCRIBE_TYPE_PHOTO = 'Photograph'
 DESCRIBE_TYPE_ANIME = 'Art/Anime'
 DESCRIBE_TYPES = [DESCRIBE_TYPE_PHOTO, DESCRIBE_TYPE_ANIME]

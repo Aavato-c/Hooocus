@@ -1,4 +1,8 @@
+from dataclasses import dataclass
+import random
 import os, sys
+
+from attr import validate
 rootdir = os.path.abspath(__file__).split("Hooocus")[0]+"Hooocus"
 sys.path.append(rootdir)
 
@@ -27,6 +31,8 @@ from h3_utils.logging_util import LoggingUtil
 from h3_utils.flags import (
     EXAMPLE_ENHANCE_DETECTION_PROMPTS,
     INPAINT_MASK_CLOTH_CATEGORY,
+    YIELD_TYPE_FLAGS,
+    yield_types,
     INPUT_IMAGE_MODES,
     KSAMPLER,
     OUTPAINT_SELECTIONS,
@@ -482,19 +488,20 @@ class ApplyImageInputParams(BaseModel):
     use_synthetic_refiner: bool
 
 
-yield_types = Literal["preview", "result", "waiting", "uri", "finish", "starting"]
+
 
 
 class YieldObject(BaseModel):
     class Config:
-        validate_assignment = True
-        arbitrary_types_allowed = True
+        validate_assignment = False
+        validation = False
 
-    yield_type: yield_types
+
+    yield_type: yield_types = YIELD_TYPE_FLAGS.meta
     progress: Optional[float] = None
     message: Optional[str] = None
     image: Optional[numpy.ndarray] = None
-    uid: str
+    uid: str = ""
 
 
 class ImageGenerationObject(_InitialImageGenerationParams):
@@ -652,7 +659,7 @@ class ImageGenerationObjectForRequests(BaseModel):
     sample_sharpness: float = Field(
         2.0, description="The default sample sharpness to use.", ge=0.0, le=30.0
     )
-    seed: int
+    seed: int = Field(random.randint(0, 2**63-1), description="The default seed to use.")
     do_not_update_seed: bool = False
     sampler_name: KSAMPLER_NAMES_LIT = "dpmpp_2m_sde_gpu"
     scheduler_name: str = "karras"
