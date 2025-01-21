@@ -4,10 +4,17 @@ import os, sys
 import typing_extensions
 
 from attr import validate
-rootdir = os.path.abspath(__file__).split("Hooocus")[0]+"Hooocus"
+
+rootdir = os.path.abspath(__file__).split("Hooocus")[0] + "Hooocus"
 sys.path.append(rootdir)
 
-from modules.sdxl_styles.prompt_styles import METASTYLES_LIT, VALID_STYLE_NAMES, VALID_STYLE_NAMES_LIST, MetaStyles, PromptStyle
+from modules.sdxl_styles.prompt_styles import (
+    METASTYLES_LIT,
+    VALID_STYLE_NAMES,
+    VALID_STYLE_NAMES_LIST,
+    MetaStyles,
+    PromptStyle,
+)
 
 from h3_utils.config_helpers import update_imageorder_log
 
@@ -76,8 +83,6 @@ BaseModel.model_config = {
 }
 
 
-
-
 class FreeUControls(BaseModel):
     class Config:
         arbitrary_types_allowed = True
@@ -86,7 +91,6 @@ class FreeUControls(BaseModel):
     freeu_b2: float = Field(1.02, le=2.0, ge=0.0)
     freeu_s1: float = Field(0.99, le=2.0, ge=0.0)
     freeu_s2: float = Field(0.95, le=2.0, ge=0.0)
-
 
 
 class OverWriteControls(BaseModel):
@@ -259,9 +263,6 @@ class EnhanceMaskCtrls(BaseModel):
     )
 
 
-
-
-
 class BaseControlNetTaskForRequests(BaseModel):
 
     stop: float = Field(0.5, ge=0, le=1)
@@ -284,7 +285,9 @@ class _InitialImageGenerationParams(BaseModel):
     uid: str = Field("", description="The default uid to use.")
     has_been_processed: bool = False
 
-    black_out_nsfw: bool = Field(True, description="Should images with nsfw be blacked out?")
+    black_out_nsfw: bool = Field(
+        True, description="Should images with nsfw be blacked out?"
+    )
 
     negative_prompt: str = Field("", description="The default negative prompt to use.")
     prompt: Optional[str] = Field(None, description="The default prompt to use.")
@@ -322,9 +325,11 @@ class _InitialImageGenerationParams(BaseModel):
         description="The default LoRAs to use.",
     )
 
-    styles: List[Union[VALID_STYLE_NAMES | METASTYLES_LIT ] ] = Field(["Fooocus_V2", "Fooocus_Sharp"], description="Style additions for prompts")
+    styles: List[Union[VALID_STYLE_NAMES | METASTYLES_LIT]] = Field(
+        ["Fooocus_V2", "Fooocus_Sharp"], description="Style additions for prompts"
+    )
     additional_style_objects: Optional[List[PromptStyle]] = []
-    
+
     seed: int = 0
     vae_name: str = Field("Default (model)", description="The default vae to use.")
 
@@ -487,14 +492,10 @@ class ApplyImageInputParams(BaseModel):
     use_synthetic_refiner: bool
 
 
-
-
-
 class YieldObject(BaseModel):
     class Config:
         validate_assignment = False
         validation = False
-
 
     yield_type: yield_types = YIELD_TYPE_FLAGS.meta
     progress: Optional[float] = None
@@ -506,6 +507,8 @@ class YieldObject(BaseModel):
 class ImageGenerationObject(_InitialImageGenerationParams):
     prepared_tasklets: Optional[TaskletObject] = None
     processing_time: Optional[float] = None
+
+    # TODO: This here or at prompt?
     use_prompt_expansion: bool = True
 
     class Config:
@@ -522,7 +525,7 @@ class ImageGenerationObject(_InitialImageGenerationParams):
         try:
             with open(f"{PARENT_DIR}/logs/imagen_logs/{self.uid}.json", "w") as f:
                 json_model = self.model_dump()
-                json_model['performance_selection'] = self.performance_selection.value
+                json_model["performance_selection"] = self.performance_selection.value
                 json.dump(json_model, f, indent=4, ensure_ascii=False)
         except Exception as e:
             if "serialization" in str(e):
@@ -597,7 +600,6 @@ class ImageGenerationObject(_InitialImageGenerationParams):
             file_name="pytorch_model.bin",
         )
 
-
         if LAUNCH_ARGS.disable_preset_download:
             log.info("Skipped model download.")
             return default_model, self.checkpoint_downloads
@@ -638,10 +640,9 @@ class ImageGenerationObject(_InitialImageGenerationParams):
             )
 
         return default_model, self.checkpoint_downloads
-    
+
     def prepare_styles(self):
-        """Fix styles if spaces are present.
-        """
+        """Fix styles if spaces are present."""
         if self.styles:
             corrected_styles = []
             for style in self.styles:
@@ -658,13 +659,13 @@ class ImageGenerationObject(_InitialImageGenerationParams):
             self.styles = corrected_styles
 
 
-
 class ImageGenerationObjectForRequests(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
     uid: Optional[str] = ""
     has_been_processed: bool = False
+    # Needed? TODO
     use_prompt_expansion: bool = True
 
     negative_prompt: str = Field("", description="The default negative prompt to use.")
@@ -677,7 +678,9 @@ class ImageGenerationObjectForRequests(BaseModel):
     sample_sharpness: float = Field(
         2.0, description="The default sample sharpness to use.", ge=0.0, le=30.0
     )
-    seed: int = Field(random.randint(0, 2**63-1), description="The default seed to use.")
+    seed: int = Field(
+        random.randint(0, 2**63 - 1), description="The default seed to use."
+    )
     do_not_update_seed: bool = False
     sampler_name: KSAMPLER_NAMES_LIT = "dpmpp_2m_sde_gpu"
     scheduler_name: str = "karras"
@@ -714,6 +717,7 @@ class ImageGenerationObjectForRequests(BaseModel):
     vae_name: str = Field("Default (model)", description="The default vae to use.")
 
     performance_selection: Performance | str = Performance.SPEED.value
+
     @field_validator("performance_selection", mode="before")
     def validate_performance_selection_by_name(cls, v):
         if isinstance(v, str):
