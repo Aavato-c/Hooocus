@@ -1,9 +1,14 @@
-import os
+import os, sys
+rootdir = os.path.abspath(__file__).split("Hooocus")[0]+"Hooocus"
+sys.path.append(rootdir)
+
+from h3_utils.flags import MAX_SEED
 from typing import List, Optional, Dict
 from httpx import patch
 import torch
 import time
 import math
+from h3_utils.logging_util import LoggingUtil
 from modules.imagen_utils.imagen_patch_utils.patch_clip import patch_all_clip
 from modules.imagen_utils.imagen_patch_utils.patch_precision import patch_all_precision
 import ldm_patched.modules.model_base
@@ -20,7 +25,6 @@ import ldm_patched.modules.sd
 import ldm_patched.controlnet.cldm
 import ldm_patched.modules.model_patcher
 import ldm_patched.modules.samplers
-from h3_utils.config import LAUNCH_ARGS as args
 import warnings
 import safetensors.torch
 from modules.util import round_to_64
@@ -39,6 +43,10 @@ from unavoided_globals.unavoided_global_vars import (
 )
 
 GeneralArgs = LAUNCH_ARGS
+
+
+logger = LoggingUtil(__name__)
+log = logger.get_logger()
 
 @torch.no_grad()
 def calculate_weight_patched(self, patches, weight, key):

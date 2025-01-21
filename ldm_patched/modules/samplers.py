@@ -1,9 +1,20 @@
+import os, sys
+import time
+
+from sympy import per
+rootdir = os.path.abspath(__file__).split("Hooocus")[0]+"Hooocus"
+sys.path.append(rootdir)
+
+from h3_utils.logging_util import PerfLogger
 from ldm_patched.k_diffusion import sampling as k_diffusion_sampling
 from ldm_patched.unipc import uni_pc
 import torch
 import collections
 from ldm_patched.modules import model_management
 import math
+
+perflog = PerfLogger("sampling").get_logger()
+
 
 def get_area_and_mult(conds, x_in, timestep_in):
     area = (x_in.shape[2], x_in.shape[3], 0, 0)
@@ -245,6 +256,8 @@ def sampling_function(_self, model, x, timestep, uncond, cond, cond_scale, model
         
         Returns 
             denoised"""
+        perflog.info(f"Starting sampling function")
+        _pstart = time.perf_counter()
         if math.isclose(cond_scale, 1.0) and model_options.get("disable_cfg1_optimization", False) == False:
             uncond_ = None
         else:
@@ -263,6 +276,8 @@ def sampling_function(_self, model, x, timestep, uncond, cond, cond_scale, model
                     "sigma": timestep, "model_options": model_options, "input": x}
             cfg_result = fn(args)
 
+        _pstop = time.perf_counter()
+        perflog.info(f"Sampling function done\nTime: {_pstop - _pstart} seconds")
         return cfg_result
 
 class CFGNoisePredictor(torch.nn.Module):
