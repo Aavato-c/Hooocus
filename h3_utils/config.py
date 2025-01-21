@@ -287,6 +287,8 @@ class _InitialImageGenerationParams(BaseModel):
     uid: str = Field("", description="The default uid to use.")
     has_been_processed: bool = False
 
+    black_out_nsfw: bool = Field(True, description="Should images with nsfw be blacked out?")
+
     negative_prompt: str = Field("", description="The default negative prompt to use.")
     prompt: Optional[str] = Field(None, description="The default prompt to use.")
     read_wildcards_in_order: bool = False

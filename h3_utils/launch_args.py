@@ -65,7 +65,6 @@ class _LAUNCH_ARGS(BaseModel):
     # Global imagegen
     min_seed: int = 0
     max_seed: int = 2**63 - 1
-    black_out_nsfw: bool = False
     disable_attention_upcast: bool = False
     gpu_device_id: Optional[int] = None
     output_path: str = None
