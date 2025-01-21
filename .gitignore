@@ -96,3 +96,4 @@ wasteland
 __cache__
 tests/test_rest.rest
 test.webp
+models/*
