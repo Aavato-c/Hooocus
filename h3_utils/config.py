@@ -1,8 +1,8 @@
-import os
-import sys
-sys.path.append(os.path.dirname(__file__).split("h3_utils")[0])
+import os, sys
+rootdir = os.path.abspath(__file__).split("Hooocus")[0]+"Hooocus"
+sys.path.append(rootdir)
 
-from h3_utils.sdxl_styles.prompt_styles import VALID_STYLE_NAMES, MetaStyles, PromptStyle
+from modules.sdxl_styles.prompt_styles import METASTYLES_LIT, VALID_STYLE_NAMES, MetaStyles, PromptStyle
 
 from h3_utils.config_helpers import update_imageorder_log
 

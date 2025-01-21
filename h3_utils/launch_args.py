@@ -19,7 +19,6 @@ log = LoggingUtil(__name__).get_logger()
 HOOOCUS_VERSION = "0.5.2-alpha"
 METADATA_SCHEME = "Hooocus"
 
-
 class _LAUNCH_ARGS(BaseModel):
     # Modify the initial values here
     class Config:

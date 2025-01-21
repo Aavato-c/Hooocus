@@ -1,3 +1,7 @@
+import os, sys
+rootdir = os.path.abspath(__file__).split("Hooocus")[0]+"Hooocus"
+sys.path.append(rootdir)
+
 from typing import List
 import numpy as np
 import torch
@@ -12,7 +16,7 @@ from ldm_patched.modules.ops import manual_cast
 
 from extras.resampler import Resampler
 from modules.core import StableDiffusionModel, numpy_to_pytorch
-from h3_utils.model_file_config import BaseControlNetTask
+from modules.model_file_utils.model_file_config import BaseControlNetTask
 
 
 SD_V12_CHANNELS = (

@@ -1,17 +1,13 @@
-from email.mime import image
-import re
 import os, sys
+rootdir = os.path.abspath(__file__).split("Hooocus")[0]+"Hooocus"
+sys.path.append(rootdir)
+
 
 import numpy
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-import json
 
 import requests
 from PIL import Image
 from io import BytesIO
-
 
 from consts import SERVER_URL
 from h3_utils.path_configs import FolderPathsConfig

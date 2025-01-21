@@ -1,3 +1,8 @@
+import os, sys
+rootdir = os.path.abspath(__file__).split("Hooocus")[0]+"Hooocus"
+sys.path.append(rootdir)
+
+
 import logging
 import os
 import random

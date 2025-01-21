@@ -1,3 +1,7 @@
+import os, sys
+rootdir = os.path.abspath(__file__).split("Hooocus")[0]+"Hooocus"
+sys.path.append(rootdir)
+
 
 from enum import Enum
 import os
