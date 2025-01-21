@@ -309,7 +309,10 @@ VALID_STYLE_NAMES = Literal[
 ]
 
 
-
+METASTYLES_LIT = Literal[
+        "Fooocus_V2",
+        "Random_style",
+    ]
 
 class MetaStyles(Enum):
 
@@ -318,10 +321,7 @@ class MetaStyles(Enum):
         "Random_style",
     ]
 
-    ALL_NAMES_LIT = Literal[
-        "Fooocus_V2",
-        "Random_style",
-    ]
+    ALL_NAMES_LIT = METASTYLES_LIT
 
     Fooocus_V2 = PromptStyle(
         name="Fooocus_V2"

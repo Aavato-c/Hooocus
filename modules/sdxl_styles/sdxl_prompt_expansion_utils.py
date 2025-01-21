@@ -1,4 +1,7 @@
-import os
+import os, sys
+currdir = os.path.abspath(__file__)
+sys.path.append(currdir.split("Hooocus")[0]+"Hooocus")
+
 import random
 import re
 import json
@@ -6,8 +9,7 @@ import math
 
 from random import Random
 
-from h3_utils.filesystem_utils import get_files_from_folder
-from h3_utils.sdxl_styles.prompt_styles import VALID_STYLE_NAMES, PromptStyles
+from modules.sdxl_styles.prompt_styles import PromptStyles, VALID_STYLE_NAMES
 
 
 def get_random_style(rng: Random) -> str:
