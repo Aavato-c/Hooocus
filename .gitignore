@@ -96,3 +96,4 @@ __cache__
 tests/test_rest.rest
 test.webp
 models/*
+scripts/Hooocus_server_supervisorctl.conf
