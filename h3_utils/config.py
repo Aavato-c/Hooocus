@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 import random
 import os, sys
+import typing_extensions
 
 from attr import validate
 rootdir = os.path.abspath(__file__).split("Hooocus")[0]+"Hooocus"
 sys.path.append(rootdir)
 
-from modules.sdxl_styles.prompt_styles import METASTYLES_LIT, VALID_STYLE_NAMES, MetaStyles, PromptStyle
+from modules.sdxl_styles.prompt_styles import METASTYLES_LIT, VALID_STYLE_NAMES, VALID_STYLE_NAMES_LIST, MetaStyles, PromptStyle
 
 from h3_utils.config_helpers import update_imageorder_log
 
@@ -637,6 +638,25 @@ class ImageGenerationObject(_InitialImageGenerationParams):
             )
 
         return default_model, self.checkpoint_downloads
+    
+    def prepare_styles(self):
+        """Fix styles if spaces are present.
+        """
+        if self.styles:
+            corrected_styles = []
+            for style in self.styles:
+                if style in VALID_STYLE_NAMES_LIST:
+                    corrected_styles.append(style)
+                elif " " in style:
+                    style_r = style.replace(" ", "_")
+                    if style_r in VALID_STYLE_NAMES_LIST:
+                        corrected_styles.append(style_r)
+                    else:
+                        log.error(f"Invalid style {style}.")
+                else:
+                    log.error(f"Invalid style (2) {style}.")
+            self.styles = corrected_styles
+
 
 
 class ImageGenerationObjectForRequests(BaseModel):
