@@ -370,6 +370,11 @@ class ImageTaskProcessor:
         _self.generation_task.prepared_tasklets = prepared_task
         _self.generation_task.processing_time = processing_time
         _self.generation_task.save_log()
+        try:
+            _self.generation_task.save_log_json()
+        except Exception as e:
+            logger.error(f"Error saving log json: {e}")    
+            pass
         
 
 
