@@ -32,7 +32,7 @@ Look into main.py for a usage example. It all boils down to using the `ImageGene
 
 ``python3 -m venv venv``
 ``source venv/bin/activate``
-``python3 -m pip install -r requirements_versions.txt``
+``python3 -m pip install -r requirements.txt``
 --> A work in progress....
 
 ## Some of the "Hidden" tricks that were present in Fooocus that are also included in H3
