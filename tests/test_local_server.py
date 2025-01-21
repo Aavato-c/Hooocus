@@ -1,14 +1,10 @@
-from calendar import c
-import subprocess
 import os, sys
-from turtle import st
-
-from numpy import mat
-from sympy import content
-
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(CURR_DIR.split("tests")[0])
+import random
 import consts
+from h3_utils.flags import SDXL_ASPECT_RATIOS_CLASS, Performance
+from tests.test_gen_to_server import ImageType, get_image_link
 import time
 import os, sys, dotenv, pytest
 import threading
@@ -17,7 +13,7 @@ from requests import Session as RequestsSession
 from h3_utils.config import ImageGenerationObjectForRequests
 from h3_utils.logging_util import LoggingUtil
 
-from tests.utils_for_testing import test_client_main
+from tests.utils_for_testing import get_uuid, test_client_main
 
 dotenv.load_dotenv()
 
@@ -70,6 +66,33 @@ def test_getphoto(data_manager: DataManager):
     assert iternum > 0
 
 
+def test_genphoto(data_manager: DataManager):
+    uid = get_uuid()
+    test_request = ImageGenerationObjectForRequests(
+        sample_sharpness=10.5,
+        performance_selection=Performance.SPEED,
+        seed=random.randint(0, 100000),
+        prompt="A beautiful sunset over the ocean with two cats playing in the sand",
+        aspect_ratio=SDXL_ASPECT_RATIOS_CLASS.LANDSCAPE.R_1280_768,
+    )
+    response = data_manager.client.post("/gen/photo/normal", data=test_request.model_dump_json())
+    if response.status_code == 201:
+        assert True
+        response_json = response.json()
+    else:
+        log.error(f"Failed to create image order: {response.status_code}")
+
+    assert "uuid" in response_json
+    uuid_of_photo = response_json["uuid"]
+    data_manager.uuid_of_photo = uuid_of_photo
+
+    with data_manager.client.stream("GET", f"/gen/photo/{uuid_of_photo}.webp") as response:
+        iternum = 0
+        for chunk in response.iter_bytes():
+            read_resp = chunk
+            iternum += 1
+
+    assert iternum > 0
 
 
 def test_teardown(data_manager: DataManager):
