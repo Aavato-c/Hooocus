@@ -1,11 +1,14 @@
+import os, sys
+curr_dir = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(curr_dir.split("extras")[0])
+
 import cv2
 import numpy as np
 import os
 import torch
 from torchvision.transforms.functional import normalize
 
-from extras.facexlib.detection import init_detection_model
-from extras.facexlib.parsing import init_parsing_model
+from modules.model_file_utils.model_file_config import FaceXLibModelFiles
 from extras.facexlib.utils.misc import img2tensor, imwrite
 
 
@@ -96,11 +99,11 @@ class FaceRestoreHelper(object):
             self.device = device
 
         # init face detection model
-        self.face_det = init_detection_model(det_model, half=False, device=self.device, model_rootpath=model_rootpath)
+        self.face_det = FaceXLibModelFiles.init_face_detection_model(det_model, device=self.device)
 
         # init face parsing model
         self.use_parse = use_parse
-        self.face_parse = init_parsing_model(model_name='parsenet', device=self.device, model_rootpath=model_rootpath)
+        self.face_parse = FaceXLibModelFiles.init_parsing_model(model_name='parsenet', device=self.device)
 
     def set_upscale_factor(self, upscale_factor):
         self.upscale_factor = upscale_factor
