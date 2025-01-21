@@ -10,7 +10,7 @@ if os.environ.get("H3_INSTANCE_INIT") != "1":
 
 dotenv.load_dotenv(override=True)
 
-SHOULD_LOG_PERFORMANCE = True
+SHOULD_LOG_PERFORMANCE = False
 
 
 SERVER_URL = os.environ.get("SERVER_URL")
