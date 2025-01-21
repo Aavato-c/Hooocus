@@ -12,16 +12,31 @@ from random import Random
 from modules.sdxl_styles.prompt_styles import PromptStyles, VALID_STYLE_NAMES
 
 
-def get_random_style(rng: Random) -> str:
+def get_random_style() -> str:
     return PromptStyles[random.choice(VALID_STYLE_NAMES)].value
 
 
 def apply_style(style, positive, is_lambda_style=False):
     if not is_lambda_style:
-        name, p, n = PromptStyles[style].value
+        _name, p, n = PromptStyles[style].value.tuple
     else:
-        name, p, n = style
-    return p.replace('{prompt}', positive).splitlines(), n.splitlines(), '{prompt}' in p
+        _name, p, n = style
+
+    has_placeholder = False
+    if p:
+        if '{prompt}' in p:
+            p = p.replace('{prompt}', positive)
+            has_placeholder = True
+
+    else:
+        p = ""
+
+    if not n:
+        n = ""
+    
+    return_res = p.splitlines(), n.splitlines(), has_placeholder
+
+    return return_res
 
 
 def get_words(arrays, total_mult, index):

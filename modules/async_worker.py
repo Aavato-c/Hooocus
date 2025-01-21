@@ -50,9 +50,6 @@ from modules.model_file_utils.model_file_config import (
 )
 
 
-
-
-
 import h3_utils.config as config
 import h3_utils.flags as flags
 from h3_utils.logging_util import LoggingUtil
@@ -103,7 +100,7 @@ class ImageTaskProcessor:
         self.process_identifier = f"{self.pid}:{self.global_uuid}"
         self.pipeline = DefaultPipeline()
         self.processing = False
-        
+
         self.log_messages: list = []
         self.yields: Dict[str, List[config.YieldObject]] = {}
         self.current_progress: int = 1
@@ -121,7 +118,7 @@ class ImageTaskProcessor:
             curr_pids = []
             with open("__cache__/pids.txt", "r") as f:
                 curr_pids = f.readlines()
-        
+
         if curr_pids and len(curr_pids) > 0:
             curr_pid_pairs = [x.replace("\n", "") for x in curr_pids]
             curr_pid_pairs = [x.split(":") for x in curr_pid_pairs]
@@ -130,11 +127,11 @@ class ImageTaskProcessor:
             if self.pid in pids:
                 logger.warning(f"PID {self.pid} already in cache. This shouldn't happen.")
                 raise Exception(f"PID {self.pid} already in cache. This shouldn't happen.")
-            
+
             if self.process_identifier in idents:
                 logger.warning(f"Process identifier {self.process_identifier} already in cache. This shouldn't happen.")
                 raise Exception(f"Process identifier {self.process_identifier} already in cache. This shouldn't happen.")
-            
+
             if len(curr_pid_pairs) >= self.max_processes:
                 logger.warning(f"Max processes reached: {len(curr_pid_pairs)}")
                 logger.warning(f"There can be only {self.max_processes} processes running at the same time.")
@@ -151,16 +148,15 @@ class ImageTaskProcessor:
 
                     else:
                         logger.warning(f"PID {pid} is the current PID. Unhandled.")
-                
+
                 with open("__cache__/pids.txt", "a") as f:
                     curr_pids = [f"{x[0]}:{x[1]}" for x in curr_pid_pairs]
                     f.write("\n".join(curr_pids))     
         else:
             with open("__cache__/pids.txt", "a") as f:
                 f.write(f"{self.process_identifier}\n")
-     
-        # GLOBAL VAR USAGE END
 
+        # GLOBAL VAR USAGE END
 
     def initialize_current_task(self, new_task: config.ImageGenerationObject = None):
         new_task._prepare_downloads()
@@ -182,7 +178,6 @@ class ImageTaskProcessor:
 
         self.prepared_inpaint_mask = None
         self.tiled = False
-
 
         self.skip_prompt_processing = False
         self.use_synthetic_refiner = False
@@ -215,9 +210,6 @@ class ImageTaskProcessor:
         self.get_defaults_per_performance()
         self.prepare_attributes()
 
-
-
-
     def reset_cuda_memory(self):
         """Resets the CUDA memory."""
         torch.cuda.empty_cache()
@@ -236,13 +228,11 @@ class ImageTaskProcessor:
         parent_task: config.ImageGenerationObject = _self.generation_task
         _self.final_scheduler_name = _self.patch_samplers()
         logger.debug(f"Final scheduler: {_self.final_scheduler_name}")
-        
-    
+
         processing_start_time = time.perf_counter()
         preparation_steps = _self.current_progress
         id = _self.tasks.index(prepared_task)
         uid = prepared_task.uid
-
 
         def _callback(step, x0, x, total_steps, y, preview_yelder=_self.preview_yelder):
             if step == 0:
@@ -251,7 +241,7 @@ class ImageTaskProcessor:
             logger.debug(f"Callback step: {step + 1}/{total_steps}, image {id + 1}/{len(_self.tasks)}")
             is_finished = step == total_steps - 1
             if preview_yelder is not None:
-                #TODO REMOVE
+                # TODO REMOVE
                 pass
             if not is_finished:
                 _self.yields[uid].append(
@@ -263,7 +253,7 @@ class ImageTaskProcessor:
                         uid=uid
                     )
                 )
-            
+
             elif is_finished:
                 _self.yields[uid].append(
                     config.YieldObject(
@@ -274,18 +264,16 @@ class ImageTaskProcessor:
                         uid=uid
                     )
                 )
-                
+
             else:
                 raise EarlyReturnException()
-            
 
         if _self.generation_task.controlnet_tasks:
             _encoded_positive_cond, _encoded_negative_cond = _self.get_conditions_from_input_img_controlnet(prepared_task.encoded_positive_cond, prepared_task.encoded_negative_cond)
             prepared_task.encoded_positive_cond = _encoded_positive_cond
             prepared_task.encoded_negative_cond = _encoded_negative_cond
-        
 
-        #memory_usage = torch.cuda.memory_allocated() / 1024 / 1024
+        # memory_usage = torch.cuda.memory_allocated() / 1024 / 1024
         _self.yields[uid].append(
             config.YieldObject(
                 yield_type='starting',
@@ -356,7 +344,7 @@ class ImageTaskProcessor:
                         message=f'ALL TASKS FINISHED',
                         uid=uid
                     ))
-                    
+
             except Exception as e:
                 logger.error(f"Error saving image: {e}")
                 traceback.print_exc()
@@ -374,14 +362,7 @@ class ImageTaskProcessor:
         except Exception as e:
             logger.error(f"Error saving log json: {e}")    
             pass
-        
 
-
-        
-        
-
-
-        
         return imgs, img_paths
 
     # OK
@@ -427,7 +408,7 @@ class ImageTaskProcessor:
             logger.debug("No inpaint worker available, skipping post-processing")
 
         imgs = self.censor_images_if_needed(imgs)
-        
+
         return imgs
 
     # OK
@@ -435,6 +416,7 @@ class ImageTaskProcessor:
         """Processes the prompt and prepares tasks for image generation."""
         self.prepare_prompts()
         self.prepare_loras()
+        self.generation_task.prepare_styles()
 
         self.pipeline.refresh_everything(
             refiner_model_name=self.generation_task.refiner_model,
@@ -463,8 +445,6 @@ class ImageTaskProcessor:
         self.extra_negative_prompts = negative_prompts[1:] if len(negative_prompts) > 1 else []
 
         # Advance progress
-        if self.use_prompt_expansion and self.generation_task.prompt:
-            self.use_prompt_expansion = True
         return 
 
     # OK
@@ -486,17 +466,29 @@ class ImageTaskProcessor:
         for i in range(self.generation_task.image_number):
             uid = self.generation_task.uid
             task_seed, task_rng = self.get_task_seed_and_rng(i)
+            task_prompt = self.generation_task.prompt
+            task_negative_prompt = self.generation_task.negative_prompt
 
-            task_prompt, task_negative_prompt, task_extra_positive_prompts, task_extra_negative_prompts = self.get_task_prompts(task_rng, i)
+            (
+                positive_basic_workloads, 
+                negative_basic_workloads, 
+                task_styles, 
+                task_extra_positive_prompts,
+                task_extra_negative_prompts) = self.get_task_styles(task_rng, i)
 
-            positive_basic_workloads, negative_basic_workloads = self.get_basic_workloads(
-                task_prompt, task_negative_prompt, task_extra_positive_prompts, task_extra_negative_prompts)
-
-            task_styles = self.get_task_styles(task_prompt, positive_basic_workloads, task_rng)
-
-            tasks.append(self.create_a_tasklet(task_seed, task_prompt, task_negative_prompt, positive_basic_workloads,
-                                               negative_basic_workloads, task_styles, task_extra_positive_prompts,
-                                               task_extra_negative_prompts, uid))
+            tasks.append(
+                self.create_a_tasklet(
+                    task_seed,
+                    task_prompt,
+                    task_negative_prompt,
+                    positive_basic_workloads,
+                    negative_basic_workloads,
+                    task_styles,
+                    task_extra_positive_prompts,
+                    task_extra_negative_prompts,
+                    uid,
+                )
+            )
         if self.use_prompt_expansion:
             tasks = self.expand_prompts(tasks)
         encoded_tasks = self.encode_prompts(tasks)
@@ -514,53 +506,64 @@ class ImageTaskProcessor:
         return task_seed, task_rng
 
     # OK
-    def get_task_prompts(self, task_rng, i):
-        """Returns the task prompts and extra prompts."""
+    def get_task_styles(
+        self,
+        task_rng,
+        i
+    ):
+        """Returns the task styles."""
+        positive_basic_workloads = []
+        negative_basic_workloads = []
+        
         task_prompt = apply_wildcards(self.generation_task.prompt, task_rng, i, self.generation_task.read_wildcards_in_order)
         task_prompt = apply_arrays(task_prompt, i)
+        
         task_negative_prompt = apply_wildcards(self.generation_task.negative_prompt, task_rng, i, self.generation_task.read_wildcards_in_order)
+
         extra_positive_prompts = [apply_wildcards(pmt, task_rng, i, self.generation_task.read_wildcards_in_order) for pmt in
                                   remove_empty_str([safe_str(p) for p in self.generation_task.prompt.splitlines()][1:], default="")]
         extra_negative_prompts = [apply_wildcards(pmt, task_rng, i, self.generation_task.read_wildcards_in_order) for pmt in
                                   remove_empty_str([safe_str(p) for p in self.generation_task.negative_prompt.splitlines()][1:], default="")]
 
-        return task_prompt, task_negative_prompt, extra_positive_prompts, extra_negative_prompts
-        
-
-    # OK
-    def get_basic_workloads(self, task_prompt, task_negative_prompt, task_extra_positive_prompts, task_extra_negative_prompts):
-        """Returns the basic workloads for positive and negative prompts."""
-        positive_basic_workloads = [task_prompt] + task_extra_positive_prompts
-        negative_basic_workloads = [task_negative_prompt] + task_extra_negative_prompts
-        return remove_empty_str(positive_basic_workloads, default=task_prompt), remove_empty_str(negative_basic_workloads, default=task_negative_prompt)
-
-    # OK
-    def get_task_styles(self, task_prompt, positive_basic_workloads: list, task_rng):
-        """Returns the task styles."""
         task_styles = self.generation_task.styles.copy()
-    
+
+        if MetaStyles.Random_style.name in task_styles:
+            task_styles.remove(MetaStyles.Random_style.name)
+            task_styles.append(get_random_style())
+
+        if MetaStyles.Fooocus_V2.name in task_styles and self.generation_task.prompt != "":
+            task_styles.remove(MetaStyles.Fooocus_V2.name)
+            self.use_prompt_expansion = True
+
         if len(task_styles) > 0:
             placeholder_replaced = False
             for j, s in enumerate(task_styles):
-                if isinstance(self.generation_task.styles, str):
-                    if s == MetaStyles.Random_style.name:
-                        s = get_random_style(task_rng)
-                        task_styles[j] = s
+                if isinstance(s, str):
                     p, n, style_has_placeholder = apply_style(s, positive=task_prompt)
                     if style_has_placeholder:
                         placeholder_replaced = True
-                    positive_basic_workloads.extend(p)
-                elif isinstance(self.generation_task.styles, dict):
-                    # XXX 20250106
-                    if "prompt" in self.generation_task.styles and "negative_prompt" in self.generation_task.styles and "name" in self.generation_task.styles:
-                        p, n, style_has_placeholder = apply_style(self.generation_task.styles, positive=task_prompt, is_lambda_style=True)
-                    if style_has_placeholder:
-                        positive_basic_workloads.extend(p)
-                        placeholder_replaced = True
+                    if p and len(p) > 0:
+                        positive_basic_workloads = positive_basic_workloads + p
+                    if n and len(n) > 0:
+                        negative_basic_workloads = negative_basic_workloads + n
+                else:
+                    logger.error(f"Invalid style: {s}")
+                    raise Exception(f"Invalid style: {s}")
+
             if not placeholder_replaced:
-                positive_basic_workloads.insert(0, task_prompt)
+                positive_basic_workloads = [task_prompt] + positive_basic_workloads
+
+        else:
+            positive_basic_workloads.append(task_prompt)
+
+        negative_basic_workloads.append(task_negative_prompt)
         
-        return task_styles
+        positive_basic_workloads = positive_basic_workloads + extra_positive_prompts
+        negative_basic_workloads = negative_basic_workloads + extra_negative_prompts
+        positive_basic_workloads = remove_empty_str(positive_basic_workloads, default=task_prompt)
+        negative_basic_workloads = remove_empty_str(negative_basic_workloads, default=task_negative_prompt)
+
+        return positive_basic_workloads, negative_basic_workloads, task_styles, extra_positive_prompts, extra_negative_prompts
 
     # OK
     def create_a_tasklet(self, task_seed, task_prompt, task_negative_prompt, positive_basic_workloads,
@@ -583,7 +586,7 @@ class ImageTaskProcessor:
             styles=task_styles,
             uid=uid
         )
-        #logger.info(f"Tasklet: {tasklet_object}")
+        # logger.info(f"Tasklet: {tasklet_object}")
         logger.info(f"Tasklet created with uid {uid}.")
         return tasklet_object
 
@@ -601,7 +604,7 @@ class ImageTaskProcessor:
     # OK
     def encode_prompts(self, tasks: List[config.TaskletObject]):
         """Encodes the prompts for each task."""
-        
+
         i = 1
         for task in tasks:
             logger.info(f"Encoding positive {i + 1} ...")
@@ -640,8 +643,7 @@ class ImageTaskProcessor:
                     task = self.generation_tasks.pop(0)
                     if not isinstance(task.developer_options, config.DeveloperOptions):
                         task.developer_options = config.DeveloperOptions.model_validate(task.developer_options)
-                        
-                        
+
                     self.process_single_task(task)
                 else:
                     time.sleep(1.0)
@@ -657,7 +659,11 @@ class ImageTaskProcessor:
             match controlnet_task.name:
                 case ControlNetTasks.ImagePrompt.name:
                     ImagePromptAdapterPlus.download_model()
-                    self.ip_adapter.load_ip_adapter(self.clip_vision_path, self.ip_negative_path, self.ip_adapter_path)
+                    self.ip_adapter.load_ip_adapter(
+                        self.clip_vision_path,
+                        self.ip_negative_path,
+                        self.ip_adapter_path,
+                    )
                     controlnet_task.paths_of_models = [self.ip_adapter_path]
                 case ControlNetTasks.FaceSwap.name:
                     ImagePromptAdapterFace.download_model()
@@ -685,18 +691,13 @@ class ImageTaskProcessor:
             for controlnet_task in self.generation_task.controlnet_tasks:
                 cn_tasks_validated.append(BaseControlNetTask(**controlnet_task))
             self.generation_task.controlnet_tasks = cn_tasks_validated
-        
 
         self.prepare_image_inputs()
-        
-
-
 
         if self.generation_task.controlnet_tasks:
             self.prepare_controlnet_models()
-        
-        apply_patch_settings(self.pid, task)
 
+        apply_patch_settings(self.pid, task)
 
         overrides: config.Overrides = self.get_overrides(task.steps, task.height, task.width)
 
@@ -832,10 +833,10 @@ class ImageTaskProcessor:
         task: config.ImageGenerationObject = self.generation_task 
         try:
             for tasklet in self.tasks:
-                
+
                 if tasklet.uid in self.yields:
                     raise Exception(f"Tasklet with UID {tasklet.uid} already exists in yields.")
-                
+
                 self.yields[tasklet.uid] = []
                 imgs, img_paths =  self.process_tasklet(tasklet)
                 logger.info(f"Tasklet processed.")
@@ -861,7 +862,7 @@ class ImageTaskProcessor:
         """ if task.developer_options.generate_grid and len(self.results) > 2:
             wall = build_image_wall(task.results)
             task.results.append(wall) """
-        
+
         raise NotImplementedError("generate_image_wall_if_needed is not implemented yet.")
 
     # OK
@@ -883,11 +884,9 @@ class ImageTaskProcessor:
     def stop_processing(self):
         """Stops the processing of the current task."""
         if self.processing:
-            #self.interrupt_if_needed()
+            # self.interrupt_if_needed()
             self.cleanup_after_task()
             self.processing = False
-
-    
 
     # TODO
     def prepare_image_inputs(self):
@@ -910,7 +909,7 @@ class ImageTaskProcessor:
             logger.error(f"UOV is not implemented yet.")
             sys.exit(1)
 
-            #self.prepare_upscale() # TODO
+            # self.prepare_upscale() # TODO
 
             _inpaint_image = task.input_image['image']
             _inpaint_image = ensure_three_channels(_inpaint_image)
@@ -947,7 +946,7 @@ class ImageTaskProcessor:
                 self.upscale_model_path = UpscaleModel.download_model()
                 if inpaint_options.inpaint_engine_version:
                     logger.info('Downloading inpainter ...')
-                    # Regex to find the update_progress: 
+                    # Regex to find the update_progress:
                     # r"*self.update_progress\('*', 0\)"
                     self.inpaint_head_model_path = InpaintModelFiles.InpaintHead.download_model()
                     self.inpaint_patch_model_path = InpaintModelFiles.download_based_on_version(inpaint_options.inpaint_engine_version)
@@ -966,7 +965,6 @@ class ImageTaskProcessor:
                     else:
                         self.generation_task.prompt = inpaint_options.inpaint_additional_prompt + '\n' + self.generation_task.prompt
                 self.goals.append('inpaint')
-
 
         if self.generation_task.image_input_mode == 'enhance' and self.generation_task.enhance_input_image:
             logger.info('Getting input image for enhancement ...')
@@ -1086,8 +1084,6 @@ class ImageTaskProcessor:
 
         if task.enhance_task:
             task.enhance_task.enhance_uov_method = task.enhance_task.enhance_uov_method.lower()
-        if task.use_prompt_expansion:
-            self.use_prompt_expansion = True 
 
         task.aspect_ratio = task.aspect_ratio.split('*')
         task.aspect_ratio = [int(x) for x in task.aspect_ratio]
@@ -1218,14 +1214,15 @@ class ImageTaskProcessor:
             match cn_task.name:
                 case CONTROLNET_TASK_TYPES_CLASS.PyraCanny:
                     cn_img = resize_image(
-                        ensure_three_channels(cn_task.img), width=task.width, height=task.height
+                        ensure_three_channels(cn_task.img),
+                        width=task.width,
+                        height=task.height,
                     )
 
                     if not skip_cn:
                         cn_img = preprocessors.canny_pyramid(
-                            cn_img,
-                            task.canny_low_threshold,
-                            task.canny_high_threshold)
+                            cn_img, task.canny_low_threshold, task.canny_high_threshold
+                        )
 
                     cn_img = ensure_three_channels(cn_img)
                     cn_task.img = numpy_to_pytorch(cn_img)
@@ -1267,33 +1264,32 @@ class ImageTaskProcessor:
                 case _:
                     raise ValueError(f"Controlnet task {cn_task.name} not implemented yet.")
 
-
         # Image prompt and image prompt face
         task.controlnet_tasks = ready_tasks
-        
+
         all_ip_tasks = [
             cn_task for cn_task in task.controlnet_tasks if cn_task.name.lower() == CONTROLNET_TASK_TYPES_CLASS.ImagePrompt
         ] + [cn_task for cn_task in task.controlnet_tasks if cn_task.name.lower() == CONTROLNET_TASK_TYPES_CLASS.IpFace]
-        
+
         if len(all_ip_tasks) > 0:
             self.pipeline.final_unet = ip_adapter.patch_model(self.pipeline.final_unet, all_ip_tasks)
-        
+
         if self.generation_task.controlnet_tasks != ready_tasks:
             raise ValueError("Controlnet tasks not equal to ready tasks.")
-        
+
         return True
-    
+
     # OK
     def patch_samplers(self):
         task: config.ImageGenerationObject = self.generation_task
-        
+
         def _patch_discrete(unet, scheduler_name):
             return opModelSamplingDiscrete.patch(unet, scheduler_name, False)[0]
 
         def _patch_edm(unet, scheduler_name):
             return opModelSamplingContinuousEDM.patch(
                 unet, scheduler_name, 120.0, 0.002)[0]
-        
+
         if task.scheduler_name in ["lcm", "tcd"]:
             final_scheduler_name = "sgm_uniform"
             if self.pipeline.final_unet is not None:
@@ -1319,7 +1315,6 @@ class ImageTaskProcessor:
 
         else:
             final_scheduler_name = task.scheduler_name
-
 
         return final_scheduler_name
 
