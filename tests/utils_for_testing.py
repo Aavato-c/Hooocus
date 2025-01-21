@@ -24,7 +24,7 @@ from db.database import get_db
 
 from h3_utils.logging_util import LoggingUtil
 
-from server.main import app
+from modules.server.main import app
 
 dotenv.load_dotenv()
 
