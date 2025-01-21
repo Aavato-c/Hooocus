@@ -1,6 +1,7 @@
 from copy import deepcopy
 import os
 import sys
+import typing_extensions
 import numpy
 import torch
 
@@ -24,6 +25,7 @@ from pydantic import BaseModel, Field
 from modules.model_file_utils.model_loader import load_file_from_url
 from h3_utils.path_configs import FolderPathsConfig
 from h3_utils.flags import CONTROLNET_TASK_TYPES_CLASS, PerformanceLoRA
+import warnings
 
 
 log = LoggingUtil(__name__).get_logger()
@@ -47,18 +49,24 @@ class _BaseModelFile(BaseModel):
     
     def full_path(self):
         return os.path.join(self.folder_path_of_model, self.filename_of_model)
-
-    def download_model(self):
+    
+    def download_or_get_path(self):
         log.info(f"Downloading {self.filename_of_model} from {self.url_of_model}")        
         if not self.folder_path_of_model:
             raise ValueError("model_path_folder is not set.")
 
-        load_file_from_url(
+        path = load_file_from_url(
             url=self.url_of_model,
             model_dir=self.folder_path_of_model,
             file_name=self.filename_of_model
         )
-        return os.path.join(self.folder_path_of_model, self.filename_of_model)
+        return path
+    
+
+    @typing_extensions.deprecated('This method is deprecated, use download_or_get_path instead.')
+    def download_model(self):
+        warnings.warn("download_model is deprecated, use download_or_get_path instead", DeprecationWarning, stacklevel=2)
+        return self.download_or_get_path()
 
 
 
