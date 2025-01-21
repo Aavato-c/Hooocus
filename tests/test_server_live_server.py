@@ -1,17 +1,10 @@
-from calendar import c
-import subprocess
 import os, sys
-from turtle import st
-
-from numpy import mat
-from sympy import content
-
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(CURR_DIR.split("tests")[0])
+
 import consts
-import time
-import os, sys, dotenv, pytest
-import threading
+import dotenv
+import pytest
 from requests import Session as RequestsSession
 
 from h3_utils.config import ImageGenerationObject
@@ -56,12 +49,16 @@ def test_getphoto(data_manager: DataManager):
 
     response = data_manager.session.get(f"{url_base}/photo/{uuid_of_photo}.webp", stream=True)
     iternum = 1
-    for chunk in response.iter_content(chunk_size=8192):
+    for chunk in response.iter_content():
         iternum += 1
         read_resp = chunk
-        content = read_resp.decode("utf-8")
-        with open(f"tests/iters/content_live{iternum}.txt", "w") as f:
-            f.write(content)
+        _content = read_resp  # Skip decoding for image data
+        pass
+
+    assert iternum > 1
+
+        
+
 
 
 
