@@ -1,9 +1,10 @@
 # OLD CODE START ###
+import os, sys
+currdir = os.path.abspath(__file__)
+sys.path.append(currdir.split("Hooocus")[0]+"Hooocus")
 
-from asyncio import tasks
 import copy
 import datetime
-import os
 import random
 import sys
 import traceback
@@ -20,16 +21,17 @@ import torch
 
 from h3_utils.filesystem_utils import download_image_from_url
 from h3_utils.path_configs import FolderPathsConfig
-from h3_utils.sdxl_styles.prompt_styles import MetaStyles
+from modules.sdxl_styles.prompt_styles import MetaStyles
 from modules.imagen_utils.imagen_patch_utils.patch import patch_all
 from extras import face_crop, preprocessors
 from extras.expansion import safe_str
 from extras.censor import default_censor
 from modules.imagen_utils.inpaint_worker import InpaintWorker
 from modules.imagen_utils.upscale.upscaler import perform_upscale
+from modules.sdxl_styles.sdxl_prompt_expansion_utils import get_random_style, apply_style, apply_arrays
 from unavoided_globals.unavoided_global_vars import PatchSettings
 from unavoided_globals.global_model_management import global_model_management
-from h3_utils.model_file_config import (
+from modules.model_file_utils.model_file_config import (
     BaseControlNetTask,
     PyraCanny,
     CPDS,
@@ -38,7 +40,7 @@ from h3_utils.model_file_config import (
     ImagePromptAdapterNegative,
     ImagePromptAdapterPlus
 )
-from h3_utils.model_file_config import (
+from modules.model_file_utils.model_file_config import (
     UpscaleModel,
     InpaintModelFiles,
     ControlNetTasks,
@@ -49,12 +51,12 @@ from h3_utils.model_file_config import (
 
 
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 import h3_utils.config as config
 import h3_utils.flags as flags
 from h3_utils.logging_util import LoggingUtil
-from h3_utils.sdxl_styles.sdxl_prompt_expansion_utils import apply_arrays, apply_style, get_random_style
+
 from h3_utils.flags import CONTROLNET_TASK_TYPES_CLASS, LORA_FILENAMES, Overrides, Performance, Steps
 
 import extras.ip_adapter as ip_adapter

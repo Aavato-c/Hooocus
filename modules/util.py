@@ -1,3 +1,7 @@
+import os, sys
+currdir = os.path.abspath(__file__)
+sys.path.append(currdir.split("Hooocus")[0]+"Hooocus")
+
 from pathlib import Path
 
 import numpy as np
@@ -15,8 +19,7 @@ import hashlib
 from PIL import Image
 
 import h3_utils.config
-from h3_utils.sdxl_styles import prompt_styles
-import h3_utils.sdxl_styles.sdxl_prompt_expansion_utils
+from modules.sdxl_styles import prompt_styles, sdxl_prompt_expansion_utils
 from h3_utils.flags import Performance
 
 LANCZOS = (Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.LANCZOS)

@@ -1,7 +1,10 @@
+import os, sys
+currdir = os.path.abspath(__file__)
+sys.path.append(currdir.split("Hooocus")[0]+"Hooocus")
+
 import base64
 import io
 import json
-from typing import Literal, final
 import cv2
 from numpy import ndarray
 from db import crud
@@ -14,6 +17,8 @@ from PIL import Image, ImageDraw, ImageFont
 from h3_utils.logging_util import LoggingUtil
 import time
 from h3_utils.config import ImageGenerationObject, DefaultConfigImageGen
+from h3_utils.flags import OUTPUTFORMAT_LIT, OutputFormat, RETURN_FORMATS
+
 
 log = LoggingUtil(__name__).get_logger()
 
