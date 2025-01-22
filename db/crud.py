@@ -202,3 +202,30 @@ def clear_cache_for_temp_img(db: Session, order_id: UUIDType | str) -> bool:
     except Exception as e:
         log.error(f"Error clearing in-memory image cache: {e}")
         raise e
+
+def add_process(pid: int, guni_uid: str, max_processes: int, process_name: str = "H3_proc", process_metadata: dict = {}) -> UUIDType:
+    try:
+        try:
+            db = get_db_unmanaged()
+            new_process = pm.ProcessInCreate(
+                pid=pid,
+                gunicorn_uid=guni_uid,
+                max_processes=max_processes,
+                process_name=process_name,
+                process_metadata=process_metadata
+            )
+            new_process_to_add = sm.Process(**new_process.model_dump())
+            db.add(new_process_to_add)
+            db.commit()
+        finally:
+            db.close()
+        
+        return new_process.id
+    except Exception as e:
+        log.error(f"Error adding process: {e}")
+        raise e
+    
+
+
+if __name__ == "__main__":
+    add_process(123, "123", 123, "123", {"123": 123})
