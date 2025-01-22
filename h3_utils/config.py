@@ -78,6 +78,8 @@ OUTPUT_DIR = os.getenv("OUTPUT_DIR", "outputs")
 CustomNDArrayType: TypeAlias = Union[NDArray, List[NDArray]]
 
 
+SCHEMA_VERSION = "25.01.22.V1"
+
 BaseModel.model_config = {
     "arbitrary_types_allowed": True,
 }
@@ -505,6 +507,8 @@ class YieldObject(BaseModel):
 
 
 class ImageGenerationObject(_InitialImageGenerationParams):
+    schema_version: Optional[str] = Field(SCHEMA_VERSION, description="Current schema version.")
+    
     prepared_tasklets: Optional[TaskletObject] = None
     processing_time: Optional[float] = None
 
@@ -663,6 +667,7 @@ class ImageGenerationObjectForRequests(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+    schema_version: Optional[str] = Field(SCHEMA_VERSION, description="Current schema version.")
     uid: Optional[str] = ""
     has_been_processed: bool = False
     # Needed? TODO
