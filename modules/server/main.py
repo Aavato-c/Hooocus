@@ -112,6 +112,8 @@ auth_doc = {
 def get_photo_genobject(_is_verified: Annotated[bool, Depends(verify_user)], request: ImageGenerationObjectForRequests, db: Session = Depends(get_db)):
     try:
         request_validated = ImageGenerationObject.model_validate(request)
+        log.debug(f"Adding image order: {request_validated.model_dump()}")
+
 
         if request_validated.uid != "":
             log.info(f"Adding image order with UID: {request_validated.uid}. UID was provided.")

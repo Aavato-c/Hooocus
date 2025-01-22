@@ -533,7 +533,15 @@ class ImageTaskProcessor:
 
         if MetaStyles.Fooocus_V2.name in task_styles and self.generation_task.prompt != "":
             task_styles.remove(MetaStyles.Fooocus_V2.name)
+            logger.debug(f"Using prompt expansion for task because styles {i + 1} ...")
             self.use_prompt_expansion = True
+
+        if self.generation_task.use_prompt_expansion and self.generation_task.prompt != "":
+            logger.debug(f"Using prompt expansion for task {i + 1} ...")
+            self.use_prompt_expansion = True
+        else:
+            logger.debug(f"Task.use_prompt_expansion is {self.generation_task.use_prompt_expansion}")
+            logger.debug(f"Task.prompt is {self.generation_task.prompt}")
 
         if len(task_styles) > 0:
             placeholder_replaced = False
