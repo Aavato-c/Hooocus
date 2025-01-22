@@ -1,26 +1,21 @@
-import datetime
-import re
 import os, sys
-import json
-from time import perf_counter
-from typing import Literal, Union
-
-from db.database import get_db_unmanaged
-from h3_utils.flags import OutputFormat
-from h3_utils.config import ImageGenerationObjectForRequests
-
-
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CURR_DIR.split("db")[0])
+
+import datetime
+from time import perf_counter
+from typing import Union
 
 from sqlalchemy.orm import Session
 from sqlalchemy import UUID as UUIDType
 
+from db.database import get_db_unmanaged
 from db.utils import get_timestamp
 from db.models import pydantic_m as pm
 from db.models import sqlalchemy_m as sm
-from db.models.inmem_db_models import TempImgDataAdd, TempImgData
 
+from h3_utils.flags import OutputFormat
+from h3_utils.config import ImageGenerationObjectForRequests
 from h3_utils.logging_util import LoggingUtil
 from h3_utils.path_configs import FolderPathsConfig
 
@@ -102,7 +97,7 @@ def update_imageorder_status(db: Session, order_id: UUIDType, status: pm.Generat
         log.error(f"Error updating image order status: {e}")
         raise e
 
-    
+
 def get_imageorder(db: Session, order_id: UUIDType) -> pm.ImageOrderInResponse:
     """Get an image order from the database
 
@@ -145,24 +140,24 @@ def should_generate_or_url(db: Session, order_id: UUIDType) -> pm.GenerationStat
     except Exception as e:
         log.error(f"Error getting image URL: {e}")
         raise e
-    
 
-def update_inmem_img_cache(inmem_db: Session, order_id: UUIDType, img_data: bytearray, img_format: str) -> bool:
+
+def update_inmem_img_cache(db: Session, order_id: UUIDType, img_data: bytearray, img_format: str) -> bool:
     log.debug(f"Updating in-memory image cache for order: {order_id}")
     try:
         start_time = perf_counter()
-        data_to_add = TempImgDataAdd(order_uuid=order_id, image_format=img_format, image_data=img_data, updated_at=get_timestamp())
+        data_to_add = pm.TempImgDataAdd(order_uuid=order_id, image_format=img_format, image_data=img_data, updated_at=get_timestamp())
         log.debug(f"Adding temp image data with updated_at: {data_to_add.updated_at}")
-        data_to_add = TempImgData(**data_to_add.model_dump())
+        data_to_add = sm.TempImgData(**data_to_add.model_dump())
         log.debug(data_to_add.updated_at)
-        inmem_db.add(data_to_add)
-        inmem_db.commit()
+        db.add(data_to_add)
+        db.commit()
         log.debug(f"Time taken to update in-memory image cache: {perf_counter() - start_time}")
         return True
     except Exception as e:
         log.error(f"Error updating in-memory image cache: {e}")
         raise e
-    
+
 def get_temp_img_for_order(inmem_db: Session, order_id: UUIDType, finished: bool = False) -> Union[bytearray, str] | None:
     try:
         start_time = perf_counter()
@@ -182,7 +177,16 @@ def get_temp_img_for_order(inmem_db: Session, order_id: UUIDType, finished: bool
             return img_data, img_format
 
         else:            
-            img_data, img_format, updated_at = inmem_db.query(TempImgData.image_data, TempImgData.image_format, TempImgData.updated_at).filter(TempImgData.order_uuid == order_id).order_by(TempImgData.updated_at.desc()).first()
+            img_data, img_format, updated_at = (
+                inmem_db.query(
+                    sm.TempImgData.image_data,
+                    sm.TempImgData.image_format,
+                    sm.TempImgData.updated_at,
+                )
+                .filter(sm.TempImgData.order_uuid == order_id)
+                .order_by(sm.TempImgData.updated_at.desc())
+                .first()
+            )
             log.debug(f"Image update time: {datetime.datetime.fromtimestamp(updated_at)}")
             if img_data is None:
                 return None
@@ -191,11 +195,11 @@ def get_temp_img_for_order(inmem_db: Session, order_id: UUIDType, finished: bool
     except Exception as e:
         log.error(f"Error getting in-memory image cache: {e}")
         raise e
-        
+
 def clear_cache_for_temp_img(db: Session, order_id: UUIDType | str) -> bool:
     try:
         start_time = perf_counter()
-        db.query(TempImgData).filter(TempImgData.order_uuid == order_id).delete()
+        db.query(sm.TempImgData).filter(sm.TempImgData.order_uuid == order_id).delete()
         db.commit()
         log.debug(f"Time taken to clear in-memory image cache: {perf_counter() - start_time}")
         return True
