@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.exceptions import RequestValidationError
 
 from db.models.pydantic_m import GenerationStates
-from db.database import get_db, get_temp_db
+from db.database import get_db
 from db import crud
 
 from modules.imagen_utils.imagen_main import (
@@ -60,7 +60,6 @@ def serve_photo(
     file_uuid: str,
     extension: str,
     db: Session = Depends(get_db),
-    db_temp: Session = Depends(get_temp_db),
 ):
     try:
         gen_status = crud.should_generate_or_url(db, file_uuid)

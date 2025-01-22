@@ -1,6 +1,8 @@
 from enum import Enum
 from http.client import NOT_FOUND
 import os, sys
+
+from sqlalchemy import JSON
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CURR_DIR.split("db")[0])
 
@@ -120,3 +122,62 @@ class ImageOrderInResponse(SharedBase):
     image_uri: Optional[str] = None
     generation_state: GenerationStates.Lit = GenerationStates.NOT_STARTED
     log_dict: Optional[Dict[str, Any]] = {}
+
+class ProcessStates:
+    running = "running"
+    stopped = "stopped"
+    paused = "paused"
+    starting = "starting"
+    stopping = "stopping"
+    error = "error"
+
+class ProcessInCreate(BaseModel):
+    id: str | UUID = Field(default_factory=get_uuid)
+    created_at: float = Field(default_factory=get_timestamp)
+    updated_at: float = Field(default_factory=get_timestamp)
+    soft_delete: Optional[bool] = False
+    pid: int
+    gunicorn_uid: str
+    max_processes: Optional[int]
+    process_name: Optional[str]
+    process_state: Optional[str] = ProcessStates.running
+    process_metadata: Optional[dict] = {}
+
+class ProcessInUpdate(BaseModel):
+    id: str | UUID
+    updated_at: float = Field(default_factory=get_timestamp)
+    soft_delete: Optional[bool]
+    pid: Optional[int]
+    gunicorn_uid: Optional[str]
+    max_processes: Optional[int]
+    process_name: Optional[str]
+    process_state: Optional[str]
+    process_metadata: Optional[dict]
+
+class ProcessInDb(SharedBase):
+    id: str | UUID 
+    created_at: float
+    updated_at: float
+    soft_delete: Optional[bool] = False
+    pid: int
+    gunicorn_uid: str 
+    max_processes: Optional[int]
+    process_name: Optional[str]
+    process_state: Optional[str]
+    process_metadata: Optional[dict]
+
+class TempImgDataAdd(BaseModel):
+    updated_at: float
+    order_uuid: str
+    image_format: str
+    image_data: bytes
+
+class TempImgDataReturn(BaseModel):
+    id: str
+    updated_at: float
+    order_uuid: str
+    image_format: str
+    image_data: bytes
+
+
+  
