@@ -30,6 +30,7 @@ from modules.imagen_utils.imagen_main import (
 
 from consts import IMAGEN_BACKEND_PORT, IMAGEN_BACKEND_URL, SERVER_URL
 
+from h3_utils.misc_utils import get_random_string
 from h3_utils.path_configs import FolderPathsConfig
 from h3_utils.logging_util import LoggingUtil
 from h3_utils.config import ImageGenerationObject, ImageGenerationObjectForRequests
@@ -154,7 +155,9 @@ def get_photo_genobject(
         return JSONResponse(status_code=500)
 
 
-def main_entry(process_uuid=None, max_processes=4):
+
+
+def main_entry(process_uuid=get_random_string(), max_processes=4):
     if process_uuid == None:
         log.error("No entry value provided.")
         sys.exit(1)
@@ -166,7 +169,8 @@ def main_entry(process_uuid=None, max_processes=4):
 
 
 if __name__ == "__main__":
-    app = main_entry("RANDOM_UUID")
+    app = main_entry()
     uvicorn.run(
         app, port=IMAGEN_BACKEND_PORT
-    )  # uvicorn server.main:app --reload --port 8111
+    )
+

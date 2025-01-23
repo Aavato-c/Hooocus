@@ -1,5 +1,10 @@
 # OLD CODE START ###
 import os, sys
+
+from cv2 import log
+
+from db import crud
+from db.models.pydantic_m import ProcessStates
 currdir = os.path.abspath(__file__)
 sys.path.append(currdir.split("Hooocus")[0]+"Hooocus")
 
@@ -114,7 +119,18 @@ class ImageTaskProcessor:
         # GLOBAL VAR USAGE START
         logger.info(f"Initialized ImageTaskProcessor with PID {self.pid}")
 
-        if os.path.exists("__cache__/pids.txt"):
+        if not crud.add_process(
+            pid=self.pid,
+            guni_uid=self.global_uuid,
+            max_processes=self.max_processes,
+            process_name="ImageTaskProcessor",
+            process_state=ProcessStates.running):
+            logger.error("Error adding process to database.")
+
+        if not crud.kill_all_processes_not_matching_guni_id(self.global_uuid):
+            logger.error("Error killing all processes not matching guni_id.")
+
+        """ if os.path.exists("__cache__/pids.txt"):
             curr_pids = []
             with open("__cache__/pids.txt", "r") as f:
                 curr_pids = f.readlines()
@@ -154,7 +170,7 @@ class ImageTaskProcessor:
                     f.write("\n".join(curr_pids))     
         else:
             with open("__cache__/pids.txt", "a") as f:
-                f.write(f"{self.process_identifier}\n")
+                f.write(f"{self.process_identifier}\n") """
 
         # GLOBAL VAR USAGE END
 

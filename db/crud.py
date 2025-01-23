@@ -1,5 +1,7 @@
 import os, sys
 
+import psutil
+
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CURR_DIR.split("db")[0])
 
@@ -252,6 +254,7 @@ def add_process(
     max_processes: int,
     process_name: str = "H3_proc",
     process_metadata: dict = {},
+    process_state: str = pm.ProcessStates.running,
 ) -> UUIDType:
     try:
         try:
@@ -262,6 +265,7 @@ def add_process(
                 max_processes=max_processes,
                 process_name=process_name,
                 process_metadata=process_metadata,
+                process_state=process_state,
             )
             new_process_to_add = sm.Process(**new_process.model_dump())
             db.add(new_process_to_add)
@@ -273,6 +277,67 @@ def add_process(
     except Exception as e:
         log.error(f"Error adding process: {e}")
         raise e
+    
+def modify_process_state(db: Session, process_in_update: pm.ProcessInUpdate) -> bool:
+    try:
+        db.query(sm.Process).filter(sm.Process.id == process_in_update.id).update(**process_in_update.model_dump())
+        db.commit()
+        return True
+    except Exception as e:
+        log.error(f"Error modifying process state: {e}")
+        return False
+    
+def get_processes_by_guni_id(db: Session, guni_id: str) -> list[pm.ProcessInDb]:
+    try:
+        processes = db.query(sm.Process).filter(sm.Process.gunicorn_uid == guni_id).all()
+        return [pm.ProcessInDb.model_validate(process) for process in processes]
+    except Exception as e:
+        log.error(f"Error getting processes by gunicorn ID: {e}")
+        raise e
+    
+def kill_all_processes_not_matching_guni_id(guni_id: str, dry_run: bool = False) -> bool:
+    try:
+        db = get_db_unmanaged()
+        processes_not_matching = db.query(sm.Process).filter(sm.Process.gunicorn_uid != guni_id, sm.Process.soft_delete == False).all()
+        if not processes_not_matching or len(processes_not_matching) == 0:
+            log.warning("No processes found to kill")
+            return True
+        
+        for process in processes_not_matching:
+            process_exists = psutil.pid_exists(process.pid)
+            if not process_exists:
+                log.warning(f"Process with PID: {process.pid} does not exist")
+                if not dry_run:
+                    process.soft_delete = True
+                    process.updated_at = get_timestamp()
+                    db.commit()
+                else:
+                    log.warning("Dry run, not removing reduntant process")
+                continue
+            if not dry_run:
+                os.system(f"kill {process.pid}")
+                process.soft_delete = True
+                process.updated_at = get_timestamp()
+                db.commit()
+                log.warning(f"Killed process with PID: {process.pid}. (By process pid: {os.getpid()})")
+            else:
+                log.warning(f"Dry run, not killing process with PID: {process.pid}")
+        db.close()
+        return True
+    except Exception as e:
+        log.error(f"Error killing processes not matching gunicorn ID: {e}")
+        db.close()
+        return False
+    finally:
+        db.close()
+
+
+            
+        
+
+
+
+    
 
 
 if __name__ == "__main__":
