@@ -1,8 +1,6 @@
 # OLD CODE START ###
 import os, sys
 
-from cv2 import log
-
 from db import crud
 from db.models.pydantic_m import ProcessStates
 currdir = os.path.abspath(__file__)

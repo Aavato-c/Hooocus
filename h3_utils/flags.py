@@ -13,7 +13,6 @@ from h3_utils.filesystem_utils import (
 )
 from h3_utils.path_configs import FolderPathsConfig
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from enum import IntEnum, Enum
 from typing import Literal
 import tempfile
