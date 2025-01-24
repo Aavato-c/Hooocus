@@ -128,7 +128,7 @@ def get_photo_genobject(
 ):
     try:
         request_validated = ImageGenerationObject.model_validate(request)
-        log.debug(f"Adding image order: {request_validated.model_dump()}")
+        log.debug(f"Adding image order: \n\n{request_validated.model_dump()}\n\n")
 
         if request_validated.uid != "":
             log.info(
