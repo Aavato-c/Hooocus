@@ -115,7 +115,7 @@ class ImageTaskProcessor:
         self.ip_adapter = ip_adapter.IpaAdapterManagement()
 
         # GLOBAL VAR USAGE START
-        logger.info(f"Initialized ImageTaskProcessor with PID {self.pid}")
+        logger.info(f"Initialized ImageTaskProcessor with PID {self.pid} and GUNI {self.global_uuid}")
 
         if not crud.add_process(
             pid=self.pid,
