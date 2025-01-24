@@ -108,6 +108,11 @@ class OverWriteControls(BaseModel):
     overwrite_width: int = -1
 
 
+class LoraTuple(BaseModel):
+    name_of_lora: Optional[str] = ""
+    weight: Optional[float] = 0.0
+
+
 class DeveloperOptions(BaseModel):
 
     class Config:
