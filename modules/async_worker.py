@@ -386,7 +386,7 @@ class ImageTaskProcessor:
             if isinstance(var, np.ndarray):
                 del var
             else:
-                logger.warning("Variable is not a numpy array, skipping deletion and setting to none.")
+                #logger.warning("Variable is not a numpy array, skipping deletion and setting to none.")
                 var = None
 
     # OK
