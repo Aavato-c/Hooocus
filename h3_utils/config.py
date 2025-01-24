@@ -297,7 +297,7 @@ class _InitialImageGenerationParams(BaseModel):
     )
 
     negative_prompt: str = Field("", description="The default negative prompt to use.")
-    prompt: Optional[str] = Field(None, description="The default prompt to use.")
+    prompt: str = Field("A black cat wearing a sombrero hat", description="The default prompt to use.")
     read_wildcards_in_order: bool = False
 
     width: Optional[int] = Field(None, description="The default width to use.")
