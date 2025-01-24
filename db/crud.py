@@ -315,6 +315,7 @@ def kill_all_processes_not_matching_guni_id(guni_id: str, dry_run: bool = False)
                     log.warning("Dry run, not removing reduntant process")
                 continue
             if not dry_run:
+                log.warning(f"Killing process with PID: {process.pid}")
                 os.system(f"kill {process.pid}")
                 process.soft_delete = True
                 process.updated_at = get_timestamp()
