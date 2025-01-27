@@ -754,7 +754,6 @@ class ImageTaskProcessor:
                 height,
             ) = self.apply_upscale()
             if direct_return:
-                d = [('Upscale (Fast)', 'upscale_fast', '2x')]
                 self.yields[task.uid].append(
                     config.YieldObject(
                         yield_type='message',
@@ -916,8 +915,10 @@ class ImageTaskProcessor:
         inpaint_options = self.generation_task.inpaint_options
         task: config.ImageGenerationObject = self.generation_task
 
-        if task.input_image == None and task.input_image_url != None:
-            task.input_image = download_image_from_url(task.input_image_url)
+        if len(task.input_images) > 0:
+            for _input_image in task.input_images:
+                if _input_image.input_image_url != None and _input_image.input_image == None:
+                    _input_image.input_image = download_image_from_url(_input_image.input_image_url)
 
         if task.controlnet_tasks:
             for controlnet_task in task.controlnet_tasks:
@@ -925,7 +926,7 @@ class ImageTaskProcessor:
                     controlnet_task.img = download_image_from_url(controlnet_task.image_url)
 
         # TODO Move to it's own object, setup funcs
-        if (ip_mode == flags.INPUT_IMAGE_MODES_CLASS.uov or \
+        if (ip_mode == flags.INPUT_IMAGE_MODES_CLASS.upscale_or_variation or \
             (ip_mode == flags.INPUT_IMAGE_MODES_CLASS.ip and task.mix_image_prompt_and_vary_upscale == True))\
             and task.input_image != None:
             logger.error(f"UOV is not implemented yet.")

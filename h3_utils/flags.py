@@ -1,4 +1,5 @@
 import sys, os
+import typing_extensions
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -125,16 +126,21 @@ class SDXL_ASPECT_RATIOS_CLASS:
         R_1024_960 = "1024*960"
 
 
-INPUT_IMAGE_MODES = Literal["uov", "inpaint", "ip", "desc", "enhance", "metadata"]
+INPUT_IMAGE_MODES = Literal["uov", "inpaint", "ip", "desc", "enhance", "metadata", "mask"]
 
 
 class INPUT_IMAGE_MODES_CLASS:
-    uov = "uov"
+    upscale_or_variation = "uov"
+    @typing_extensions.deprecated("Use upscale_or_variation instead")
+    @property
+    def uov():
+        return "uov"
     ip = "ip"
     inpaint = "inpaint"
     desc = "desc"
     enhance = "enhance"
     metadata = "metadata"
+    mask = "mask"
 
 
 class Overrides(BaseModel):
@@ -168,6 +174,15 @@ UPSCALE_OR_VARIATION_MODES = Literal[
     "Upscale (2x)",
     "Upscale (Fast 2x)",
 ]
+
+class UOV_MODE:
+    Enabled = "Enabled"
+    Vary_Subtle = "Vary (Subtle)"
+    Vary_Strong = "Vary (Strong)"
+    Upscale_1_5x = "Upscale (1.5x)"
+    Upscale_2x = "Upscale (2x)"
+    Upscale_Fast_2x = "Upscale (Fast 2x)"
+
 
 CIVITAI_NO_KARRAS = Literal[
     "euler", "euler_ancestral", "heun", "dpm_fast", "dpm_adaptive", "ddim", "uni_pc"
