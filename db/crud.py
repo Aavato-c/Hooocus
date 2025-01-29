@@ -316,7 +316,23 @@ def kill_all_processes_not_matching_guni_id(guni_id: str, dry_run: bool = False)
                 continue
             if not dry_run:
                 log.warning(f"Killing process with PID: {process.pid}")
-                os.system(f"kill {process.pid}")
+                own_pid = os.getpid()
+                if process.pid == own_pid:
+                    log.warning(f"Cannot kill process with PID: {process.pid} as it is the same as the current process")
+                    continue
+                
+                # If a gunicorn process is running when running this in debug, 
+                # the gunicorn process will kill this one too after it restarts
+                gunicorn_running = any("gunicorn" in p.name() for p in psutil.process_iter())
+                if not gunicorn_running:
+                    log.warning("Gunicorn is running!")
+                    if sys.gettrace() is not None:
+                        log.warning("Debugger is running while gunicorn is running, skipping process termination as it might cause a loop after supervisor restarts the gunicorn process.")
+                        raise Exception("Debugger is running, skipping process termination ")
+
+
+
+                os.system(f"kill -9 {process.pid}")
                 process.soft_delete = True
                 process.updated_at = get_timestamp()
                 db.commit()
