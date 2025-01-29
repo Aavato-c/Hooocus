@@ -15,31 +15,40 @@ from sqlalchemy.orm import sessionmaker, Session
 from db.models.sqlalchemy_m import Base
 
 
-
 logger = LoggingUtil(__name__).get_logger()
 
-engine = create_engine(DB_URL, pool_size=20, max_overflow=0, connect_args={"check_same_thread": False})
+engine = create_engine(
+    DB_URL, pool_size=20, 
+    max_overflow=10, 
+    connect_args={"check_same_thread": False},
+    pool_timeout=30
+
+    )
 
 in_mem_url = "sqlite:////tmp/h3_inmem.db"
 
-in_memory_engine = create_engine(DB_URL, pool_size=20, max_overflow=0, connect_args={"check_same_thread": False})
+in_memory_engine = create_engine(
+    DB_URL, 
+    pool_size=20, 
+    max_overflow=10, 
+    connect_args={"check_same_thread": False},
+    pool_timeout=30
+    )
 
 
 # Create a session object that will be used to interact with the database
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-#InMemSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=in_memory_engine)
+# InMemSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=in_memory_engine)
 
 # Create the database tables
 Base.metadata.create_all(bind=engine)
 
-#inmemModels.InMemBase.metadata.create_all(bind=in_memory_engine)
+# inmemModels.InMemBase.metadata.create_all(bind=in_memory_engine)
 
 
 engine_test = create_engine(DB_URL_TEST, connect_args={"check_same_thread": False})
 SessionLocalTesting = sessionmaker(autocommit=False, autoflush=False, bind=engine_test)
-
-
 
 
 def get_db():
@@ -63,10 +72,12 @@ def get_db():
         db = SessionLocal()
     try:
         yield db
+
+    except Exception as e:
+        logger.error(f"Error in db/database.py: {e}")
+        db.close()
     finally:
         db.close()
-
-
 
 
 def get_db_unmanaged() -> Session:
