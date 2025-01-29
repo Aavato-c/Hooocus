@@ -311,6 +311,7 @@ def generate_image_to_stream(
             log.info("Closing inmem_db and db.")
             if not finished:
                 # TODO Remove if not raised
+                db.close()
                 raise Exception("Not finished but ready to close?")
 
             inmem_db.close()
@@ -391,6 +392,10 @@ def yield_temps_if_streaming(
 
                 case _:
                     raise Exception("Invalid generation state.")
+    except Exception as e:
+        log.error(f"Error in temp yield: {e}")
+        db.close()
+        inmem_db.close()
 
     finally:
         log.debug("Closing inmem_db and db in Temp Yield.")
