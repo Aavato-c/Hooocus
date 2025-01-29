@@ -132,7 +132,6 @@ INPUT_IMAGE_MODES = Literal["uov", "inpaint", "ip", "desc", "enhance", "metadata
 class INPUT_IMAGE_MODES_CLASS:
     upscale_or_variation = "uov"
     @typing_extensions.deprecated("Use upscale_or_variation instead")
-    @property
     def uov():
         return "uov"
     ip = "ip"
