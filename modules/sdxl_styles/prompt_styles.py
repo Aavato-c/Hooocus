@@ -38,7 +38,6 @@ VALID_STYLE_NAMES = Literal[
     "Fooocus_Masterpiece",
     "Fooocus_Negative",
     "Fooocus_Photograph",
-    "Fooocus_Pony",
     "Fooocus_Semi_Realistic",
     "Fooocus_Sharp",
     "Abstract_Expressionism",
@@ -320,7 +319,6 @@ VALID_STYLE_NAMES_LIST = [
     "Fooocus_Masterpiece",
     "Fooocus_Negative",
     "Fooocus_Photograph",
-    "Fooocus_Pony",
     "Fooocus_Semi_Realistic",
     "Fooocus_Sharp",
     "Abstract_Expressionism",
@@ -657,11 +655,6 @@ class PromptStyles(Enum):
         negative_prompt="anime, cartoon, graphic, text, painting, crayon, graphite, abstract, glitch, deformed, mutated, ugly, disfigured",
     )
 
-    Fooocus_Pony = PromptStyle(
-        name="Fooocus_Pony",
-        prompt="score_9, score_8_up, score_7_up, {prompt}",
-        negative_prompt="score_6, score_5, score_4",
-    )
 
     MK_Chromolithography = PromptStyle(
         name="MK_Chromolithography",
