@@ -2,6 +2,8 @@ import os, sys
 
 import psutil
 
+from h3_utils.server_flags import SERVER_ERRORS
+
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CURR_DIR.split("db")[0])
 
@@ -64,8 +66,13 @@ def add_imageorder(
         db.commit()
         return uuid_of_new_order
     except Exception as e:
-        log.error(f"Error adding event: {e}")
-        raise e
+        if "(sqlite3.IntegrityError) UNIQUE constraint failed: image_order.id" in str(e):
+            log.debug(f"Duplicated UUID: {optional_uuid}")
+            log.error(f"{SERVER_ERRORS.duplicate}")
+            return False
+        else:
+            log.error(f"Error adding event: {e}")
+            raise e
 
 
 def update_imageorder_status(
@@ -295,9 +302,11 @@ def get_processes_by_guni_id(db: Session, guni_id: str) -> list[pm.ProcessInDb]:
         log.error(f"Error getting processes by gunicorn ID: {e}")
         raise e
     
+    
 def kill_all_processes_not_matching_guni_id(guni_id: str, dry_run: bool = False) -> bool:
     try:
         db = get_db_unmanaged()
+        # TODO: Add a check to kill additional processes exceeding the max_processes
         processes_not_matching = db.query(sm.Process).filter(sm.Process.gunicorn_uid != guni_id, sm.Process.soft_delete == False).all()
         if not processes_not_matching or len(processes_not_matching) == 0:
             log.warning("No processes found to kill")
@@ -307,12 +316,9 @@ def kill_all_processes_not_matching_guni_id(guni_id: str, dry_run: bool = False)
             process_exists = psutil.pid_exists(process.pid)
             if not process_exists:
                 log.warning(f"Process with PID: {process.pid} does not exist")
-                if not dry_run:
-                    process.soft_delete = True
-                    process.updated_at = get_timestamp()
-                    db.commit()
-                else:
-                    log.warning("Dry run, not removing reduntant process")
+                process.soft_delete = True
+                process.updated_at = get_timestamp()
+                db.commit()
                 continue
             if not dry_run:
                 log.warning(f"Killing process with PID: {process.pid}")
@@ -324,19 +330,19 @@ def kill_all_processes_not_matching_guni_id(guni_id: str, dry_run: bool = False)
                 # If a gunicorn process is running when running this in debug, 
                 # the gunicorn process will kill this one too after it restarts
                 gunicorn_running = any("gunicorn" in p.name() for p in psutil.process_iter())
-                if not gunicorn_running:
-                    log.warning("Gunicorn is running!")
-                    if sys.gettrace() is not None:
+                if gunicorn_running:
+                    log.debug("Found gunicorn process running")
+                    debugger_trace = getattr(sys, 'gettrace', None)
+                    if debugger_trace:
                         log.warning("Debugger is running while gunicorn is running, skipping process termination as it might cause a loop after supervisor restarts the gunicorn process.")
-                        raise Exception("Debugger is running, skipping process termination ")
+                        continue
 
-
-
-                os.system(f"kill -9 {process.pid}")
-                process.soft_delete = True
-                process.updated_at = get_timestamp()
-                db.commit()
-                log.warning(f"Killed process with PID: {process.pid}. (By process pid: {os.getpid()})")
+                    else:
+                        os.system(f"kill -9 {process.pid}")
+                        process.soft_delete = True
+                        process.updated_at = get_timestamp()
+                        db.commit()
+                        log.warning(f"Killed process with PID: {process.pid}. (By process pid: {os.getpid()})")
             else:
                 log.warning(f"Dry run, not killing process with PID: {process.pid}")
         db.close()
