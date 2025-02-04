@@ -25,14 +25,7 @@ import torch
 from h3_utils.filesystem_utils import download_image_from_url
 from h3_utils.path_configs import FolderPathsConfig
 from modules.sdxl_styles.prompt_styles import MetaStyles
-from modules.imagen_utils.imagen_patch_utils.patch import patch_all
-from extras import face_crop, preprocessors
-from extras.expansion import safe_str
-from extras.censor import default_censor
-from modules.imagen_utils.inpaint_worker import InpaintWorker
-from modules.imagen_utils.upscale.upscaler import perform_upscale
 from modules.sdxl_styles.sdxl_prompt_expansion_utils import get_random_style, apply_style, apply_arrays
-from unavoided_globals.unavoided_global_vars import PatchSettings
 from unavoided_globals.global_model_management import global_model_management
 from modules.model_file_utils.model_file_config import (
     BaseControlNetTask,
@@ -57,25 +50,15 @@ import h3_utils.config as config
 import h3_utils.flags as flags
 from h3_utils.logging_util import LoggingUtil
 
-from h3_utils.flags import CONTROLNET_TASK_TYPES_CLASS, LORA_FILENAMES, Overrides, Performance, Steps
+from h3_utils.flags import CONTROLNET_TASK_TYPES_CLASS, INPUT_IMAGE_MODES_CLASS, LORA_FILENAMES, Overrides, Performance, Steps
 
-import extras.ip_adapter as ip_adapter
 
 from modules.util import apply_wildcards, ensure_three_channels, erode_or_dilate, get_image_shape_ceil, get_shape_ceil, parse_lora_references_from_prompt, remove_empty_str, remove_performance_lora, resample_image, resize_image, set_image_shape_ceil
-from modules.default_pipeline import DefaultPipeline
-from modules.core import apply_controlnet, apply_freeu, encode_vae, numpy_to_pytorch
 
 
-from unavoided_globals.unavoided_global_vars import (
-    patch_settings_GLOBAL_CAUTION,
-    opModelSamplingDiscrete,
-    opModelSamplingContinuousEDM,
-    apply_patch_settings,
-)
 
-import ldm_patched.modules.model_management
 
-patch_all()
+
 
 OUTPUT_DIR = FolderPathsConfig.path_outputs
 
@@ -91,17 +74,66 @@ if SERVER_URL is None:
 class EarlyReturnException(BaseException):
     pass
 
+class ImportDelayer:
+    # This is to delay imports of theses modules until we've set the instance count to db
+    # Not the best way to do this, but it will deal with the networky import jungle for now
+    
+    
+    def __init__(self):
+        from extras import face_crop, preprocessors
+        from extras.censor import default_censor
+        from extras.expansion import safe_str
+        from modules.imagen_utils.inpaint_worker import InpaintWorker
+        from modules.imagen_utils.upscale.upscaler import perform_upscale
+        from unavoided_globals.unavoided_global_vars import PatchSettings
+        import extras.ip_adapter as ip_adapter
+        from modules.default_pipeline import DefaultPipeline
+        from modules.core import apply_controlnet, apply_freeu, encode_vae, numpy_to_pytorch
+        from unavoided_globals.unavoided_global_vars import (
+                patch_settings_GLOBAL_CAUTION,
+                opModelSamplingDiscrete,
+                opModelSamplingContinuousEDM,
+                apply_patch_settings,
+            )
+        
+
+        self.patch_settings_GLOBAL_CAUTION = patch_settings_GLOBAL_CAUTION
+        self.opModelSamplingDiscrete = opModelSamplingDiscrete
+        self.opModelSamplingContinuousEDM = opModelSamplingContinuousEDM
+        self.apply_patch_settings = apply_patch_settings
+        self.apply_controlnet = apply_controlnet
+        self.apply_freeu = apply_freeu
+        self.encode_vae = encode_vae
+        self.numpy_to_pytorch = numpy_to_pytorch
+        self.default_censor = default_censor
+        self.DefaultPipeline = DefaultPipeline
+        self.face_crop = face_crop
+        self.ip_adapter = ip_adapter
+        self.preprocessors = preprocessors
+        self.safe_str = safe_str
+        self.InpaintWorker = InpaintWorker
+        self.perform_upscale = perform_upscale
+        self.PatchSettings = PatchSettings
+
+
 class ImageTaskProcessor:
-    def __init__(self, global_uuid: str = None, max_processes: int = 4):
+    def __init__(self, global_uuid: str = None, max_processes: int = 4, instance_count: int = 1):
+        from modules.imagen_utils.imagen_patch_utils.patch import patch_all
+        patch_all()
+        self.dld = ImportDelayer()
+        self.pid = None
+        self.instance_count = instance_count
         self.global_uuid = global_uuid
         self.max_processes = max_processes
+        self.instance_count = None
+        self.inpaint_worker = None
         self.initialize_processor()
         self.preview_yelder = None
 
     def initialize_processor(self):
         self.pid = os.getpid()
         self.process_identifier = f"{self.pid}:{self.global_uuid}"
-        self.pipeline = DefaultPipeline()
+        self.pipeline = self.dld.DefaultPipeline()
         self.processing = False
 
         self.log_messages: list = []
@@ -109,21 +141,16 @@ class ImageTaskProcessor:
         self.current_progress: int = 1
         self.total_progress: int = 100
 
+
+
         self.generation_task: config.ImageGenerationObject = None
         self.generation_tasks: List[config.ImageGenerationObject] = []
 
-        self.ip_adapter = ip_adapter.IpaAdapterManagement()
+        self.ip_adapter = self.dld.ip_adapter.IpaAdapterManagement()
 
         # GLOBAL VAR USAGE START
         logger.info(f"Initialized ImageTaskProcessor with PID {self.pid} and GUNI {self.global_uuid}")
 
-        if not crud.add_process(
-            pid=self.pid,
-            guni_uid=self.global_uuid,
-            max_processes=self.max_processes,
-            process_name="ImageTaskProcessor",
-            process_state=ProcessStates.running):
-            logger.error("Error adding process to database.")
 
         if not crud.kill_all_processes_not_matching_guni_id(self.global_uuid):
             logger.error("Error killing all processes not matching guni_id.")
@@ -172,12 +199,14 @@ class ImageTaskProcessor:
 
         # GLOBAL VAR USAGE END
 
+
+
+
     def initialize_current_task(self, new_task: config.ImageGenerationObject = None):
         new_task._prepare_downloads()
         new_task.download_models()
         self.generation_task = new_task
-        self.patch_settings = PatchSettings()
-        self.inpaint_worker: InpaintWorker = None
+        self.patch_settings = self.dld.PatchSettings()
 
         self.results = []
         self.goals = []
@@ -233,7 +262,7 @@ class ImageTaskProcessor:
         """Censors NSFW content in images if the configuration requires it."""
         if self.generation_task.black_out_nsfw:
             logger.info(f"Censoring {len(imgs)} images ...")
-            imgs = default_censor(imgs)
+            imgs = self.dld.default_censor(imgs)
         return imgs
 
     # OK
@@ -402,7 +431,7 @@ class ImageTaskProcessor:
         if self.generation_task.controlnet_tasks:
             for controlnet_task in self.generation_task.controlnet_tasks:
                 if controlnet_task.name in [ControlNetTasks.CPDS.name, ControlNetTasks.PyraCanny.name]:
-                    positive_cond, negative_cond = apply_controlnet(
+                    positive_cond, negative_cond = self.dld.apply_controlnet(
                         positive_cond,
                         negative_cond,
                         self.pipeline.loaded_ControlNets[controlnet_task.paths_of_models[0]],
@@ -450,8 +479,8 @@ class ImageTaskProcessor:
     # OK
     def prepare_prompts(self):
         """Prepares and returns the main and negative prompts."""
-        prompts = remove_empty_str([safe_str(p) for p in self.generation_task.prompt.splitlines()], default="")
-        negative_prompts = remove_empty_str([safe_str(p) for p in self.generation_task.negative_prompt.splitlines()], default="")
+        prompts = remove_empty_str([self.dld.safe_str(p) for p in self.generation_task.prompt.splitlines()], default="")
+        negative_prompts = remove_empty_str([self.dld.safe_str(p) for p in self.generation_task.negative_prompt.splitlines()], default="")
         self.generation_task.prompt = prompts[0]
         self.generation_task.negative_prompt = negative_prompts[0]
 
@@ -535,9 +564,9 @@ class ImageTaskProcessor:
         task_negative_prompt = apply_wildcards(self.generation_task.negative_prompt, task_rng, i, self.generation_task.read_wildcards_in_order)
 
         extra_positive_prompts = [apply_wildcards(pmt, task_rng, i, self.generation_task.read_wildcards_in_order) for pmt in
-                                  remove_empty_str([safe_str(p) for p in self.generation_task.prompt.splitlines()][1:], default="")]
+                                  remove_empty_str([self.dld.safe_str(p) for p in self.generation_task.prompt.splitlines()][1:], default="")]
         extra_negative_prompts = [apply_wildcards(pmt, task_rng, i, self.generation_task.read_wildcards_in_order) for pmt in
-                                  remove_empty_str([safe_str(p) for p in self.generation_task.negative_prompt.splitlines()][1:], default="")]
+                                  remove_empty_str([self.dld.safe_str(p) for p in self.generation_task.negative_prompt.splitlines()][1:], default="")]
 
         task_styles = self.generation_task.styles.copy()
 
@@ -719,7 +748,7 @@ class ImageTaskProcessor:
         if self.generation_task.controlnet_tasks:
             self.prepare_controlnet_models()
 
-        apply_patch_settings(self.pid, task)
+        self.dld.apply_patch_settings(self.pid, task)
 
         overrides: config.Overrides = self.get_overrides(task.steps, task.height, task.width)
 
@@ -841,7 +870,7 @@ class ImageTaskProcessor:
         if not self.generation_task.freeu_controls:
             return
         logger.info(f"FreeU is enabled!")
-        self.pipeline.final_unet = apply_freeu(
+        self.pipeline.final_unet = self.dld.apply_freeu(
             self.pipeline.final_unet,
             self.generation_task.freeu_controls.freeu_b1,
             self.generation_task.freeu_controls.freeu_b2,
@@ -889,8 +918,8 @@ class ImageTaskProcessor:
     # OK
     def cleanup_after_task(self):
         """Cleans up after processing a task."""
-        if self.pid in patch_settings_GLOBAL_CAUTION:
-            del patch_settings_GLOBAL_CAUTION[self.pid]
+        if self.pid in self.dld.patch_settings_GLOBAL_CAUTION:
+            del self.dld.patch_settings_GLOBAL_CAUTION[self.pid]
     pass
 
     """ def start_worker_thread(self):
@@ -915,10 +944,26 @@ class ImageTaskProcessor:
         inpaint_options = self.generation_task.inpaint_options
         task: config.ImageGenerationObject = self.generation_task
 
-        if len(task.input_images) > 0:
-            for _input_image in task.input_images:
-                if _input_image.input_image_url != None and _input_image.input_image == None:
-                    _input_image.input_image = download_image_from_url(_input_image.input_image_url)
+        if task.input_images:
+            should_init_inpaint_engine = False
+            if len(task.input_images) > 0:
+                for _input_image in task.input_images:
+                    if _input_image.input_image_url != None and _input_image.input_image == None:
+                        _input_image.input_image = download_image_from_url(_input_image.input_image_url)
+                    
+                    if _input_image.input_image_type == INPUT_IMAGE_MODES_CLASS.inpaint:
+                        inpaint_img = _input_image.input_image
+                    if _input_image.input_image_type == INPUT_IMAGE_MODES_CLASS.mask:
+                        inpaint_mask_img = _input_image.input_image
+                
+                    should_init_inpaint_engine = True if inpaint_img and inpaint_mask_img else False
+
+            if should_init_inpaint_engine:            
+                self.inpaint_worker = self.dld.InpaintWorker(
+                    image=inpaint_img,
+                    mask=inpaint_mask_img)
+            else:
+                self.inpaint_worker = None
 
         if task.controlnet_tasks:
             for controlnet_task in task.controlnet_tasks:
@@ -928,16 +973,16 @@ class ImageTaskProcessor:
         # TODO Move to it's own object, setup funcs
         if (ip_mode == flags.INPUT_IMAGE_MODES_CLASS.upscale_or_variation or \
             (ip_mode == flags.INPUT_IMAGE_MODES_CLASS.ip and task.mix_image_prompt_and_vary_upscale == True))\
-            and task.input_image != None:
+            and task.input_images != None:
             logger.error(f"UOV is not implemented yet.")
             sys.exit(1)
 
             # self.prepare_upscale() # TODO
 
-            _inpaint_image = task.input_image['image']
+            _inpaint_image = [img for img in task.input_images if img.input_image_type == flags.INPUT_IMAGE_MODES_CLASS.inpaint][0]
             _inpaint_image = ensure_three_channels(_inpaint_image)
 
-            _inpaint_mask = task.input_image['mask'][:,:, 0]
+            _inpaint_mask = [img for img in task.input_images if img.input_image_type == flags.INPUT_IMAGE_MODES_CLASS.inpaint_mask][0][:,:, 0]
 
         if ip_mode == flags.INPUT_IMAGE_MODES_CLASS.inpaint or (ip_mode == flags.INPUT_IMAGE_MODES_CLASS.ip and task.mix_image_prompt_and_inpaint):
 
@@ -1131,7 +1176,7 @@ class ImageTaskProcessor:
             logger.info(f'[Vary] Image is resized because it is too big.')
             shape_ceil = 2048
         uov_input_image = set_image_shape_ceil(uov_input_image, shape_ceil)
-        initial_pixels = numpy_to_pytorch(uov_input_image)
+        initial_pixels = self.dld.numpy_to_pytorch(uov_input_image)
 
         self.update_progress('VAE encoding ...')
 
@@ -1141,7 +1186,7 @@ class ImageTaskProcessor:
                 denoise=denoising_strength,
                 refiner_swap_method=task.refiner_swap_method
             )
-        initial_latent = encode_vae(vae=candidate_vae, pixels=initial_pixels)
+        initial_latent = self.dld.encode_vae(vae=candidate_vae, pixels=initial_pixels)
         B, C, H, W = initial_latent['samples'].shape
         width = W * 8
         height = H * 8
@@ -1162,7 +1207,7 @@ class ImageTaskProcessor:
         task: config.ImageGenerationObject = self.generation_task
         H, W, C = task.uov_input_image.shape
         logger.info(f"Upscaling image from {str((W, H))} ...")
-        uov_input_image = perform_upscale(uov_input_image)
+        uov_input_image = self.dld.perform_upscale(uov_input_image)
         logger.info(f'Image upscaled.')
         if '1.5x' in task.uov_method:
             f = 1.5
@@ -1202,15 +1247,14 @@ class ImageTaskProcessor:
         denoising_strength = 0.382
         if task.overwrite_controls.overwrite_upscale_strength > 0:
             denoising_strength = task.overwrite_controls.overwrite_upscale_strength
-        initial_pixels = numpy_to_pytorch(uov_input_image)
-        self.update_progress('VAE encoding ...')
+        initial_pixels = self.dld.numpy_to_pytorch(uov_input_image)
         candidate_vae, _ = self.pipeline.get_candidate_vae(
                 steps=task.steps,
                 switch=task.refiner_switch,
                 denoise=denoising_strength,
                 refiner_swap_method=task.refiner_swap_method
             )
-        initial_latent = encode_vae(
+        initial_latent = self.dld.encode_vae(
                 vae=candidate_vae,
                 pixels=initial_pixels, tiled=True)
         B, C, H, W = initial_latent['samples'].shape
@@ -1243,22 +1287,22 @@ class ImageTaskProcessor:
                     )
 
                     if not skip_cn:
-                        cn_img = preprocessors.canny_pyramid(
+                        cn_img = self.dld.preprocessors.canny_pyramid(
                             cn_img, task.canny_low_threshold, task.canny_high_threshold
                         )
 
                     cn_img = ensure_three_channels(cn_img)
-                    cn_task.img = numpy_to_pytorch(cn_img)
+                    cn_task.img = self.dld.numpy_to_pytorch(cn_img)
                     ready_tasks.append(cn_task)
 
                 case CONTROLNET_TASK_TYPES_CLASS.CPDS:
                     cn_img = resize_image(ensure_three_channels(cn_task.img), width=task.width, height=task.height)
 
                     if not skip_cn:
-                        cn_img = preprocessors.cpds(cn_img)
+                        cn_img = self.dld.preprocessors.cpds(cn_img)
 
                     cn_img = ensure_three_channels(cn_img)
-                    cn_task.img = numpy_to_pytorch(cn_img)
+                    cn_task.img = self.dld.numpy_to_pytorch(cn_img)
                     ready_tasks.append(cn_task)
 
                 case CONTROLNET_TASK_TYPES_CLASS.ImagePrompt:
@@ -1276,7 +1320,7 @@ class ImageTaskProcessor:
                     cn_img = ensure_three_channels(cn_task.img)
 
                     if not skip_cn:
-                        cn_img = face_crop.crop_image(cn_img)
+                        cn_img = self.dld.face_crop.crop_image(cn_img)
 
                     # https://github.com/tencent-ailab/IP-Adapter/blob/d580c50a291566bbf9fc7ac0f760506607297e6d/README.md?plain=1#L75
                     cn_img = resize_image(cn_img, width=224, height=224, resize_mode=0)
@@ -1295,7 +1339,7 @@ class ImageTaskProcessor:
         ] + [cn_task for cn_task in task.controlnet_tasks if cn_task.name.lower() == CONTROLNET_TASK_TYPES_CLASS.IpFace]
 
         if len(all_ip_tasks) > 0:
-            self.pipeline.final_unet = ip_adapter.patch_model(self.pipeline.final_unet, all_ip_tasks)
+            self.pipeline.final_unet = self.dld.ip_adapter.patch_model(self.pipeline.final_unet, all_ip_tasks)
 
         if self.generation_task.controlnet_tasks != ready_tasks:
             raise ValueError("Controlnet tasks not equal to ready tasks.")
@@ -1307,10 +1351,10 @@ class ImageTaskProcessor:
         task: config.ImageGenerationObject = self.generation_task
 
         def _patch_discrete(unet, scheduler_name):
-            return opModelSamplingDiscrete.patch(unet, scheduler_name, False)[0]
+            return self.dld.opModelSamplingDiscrete.patch(unet, scheduler_name, False)[0]
 
         def _patch_edm(unet, scheduler_name):
-            return opModelSamplingContinuousEDM.patch(
+            return self.dld.opModelSamplingContinuousEDM.patch(
                 unet, scheduler_name, 120.0, 0.002)[0]
 
         if task.scheduler_name in ["lcm", "tcd"]:
