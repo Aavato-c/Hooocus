@@ -36,7 +36,7 @@ from modules.util import (
 )
 from modules.imagen_utils.upscale.upscaler import perform_upscale
 
-import ldm_patched.modules.model_management
+import unavoided_globals.model_management
 import extras.preprocessors as preprocessors
 import extras.ip_adapter as ip_adapter
 import extras.face_crop
