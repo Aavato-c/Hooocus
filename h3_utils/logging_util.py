@@ -15,6 +15,27 @@ if not os.path.exists('logs'):
 from consts import LOGGING_LEVEL_STREAM, LOGGING_LEVEL_FILE, SHOULD_LOG_PERFORMANCE
 
 
+def format_table_from_str(table: list):
+    """
+    table = [
+    ["", "Man Utd", "Man City", "T Hotspur"],
+    ["Man Utd", 1, 0, 0],
+    ["Man City", 1, 1, 0],
+    ["T Hotspur", 0, 1, 2],
+    ]
+       
+    """
+    longest_cols = [
+        (max([len(str(row[i])) for row in table]) + 3)
+        for i in range(len(table[0]))
+    ]
+    row_format = "".join(["{:>" + str(longest_col) + "}" for longest_col in longest_cols])
+    print_str = ""
+    for row in table:
+        print_str += row_format.format(*row) + "\n"
+
+    return print_str
+
 class PerfLogger:
     def __init__(self, name = "perf"):
         random_chars = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
