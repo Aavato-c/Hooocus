@@ -1,7 +1,7 @@
 import os
 import sys
 
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(ROOT_DIR)
 
 import psutil
@@ -13,13 +13,13 @@ import sys
 
 from h3_utils.launch_args import LAUNCH_ARGS
 from h3_utils.logging_util import LoggingUtil
+from unavoided_globals import model_management
 
 log = LoggingUtil(__name__).get_logger()
 
 
 args = LAUNCH_ARGS
 
-args.always_high_vram = False
 
 class VRAMState(Enum):
     DISABLED = 0    #No vram present: no need to move models to vram
@@ -132,9 +132,44 @@ def get_total_memory(dev=None, torch_total_too=False):
     else:
         return mem_total
 
+
+
+from db.database import get_db_unmanaged
+from db.models.pydantic_m import ProcessInDb
+from db.models.sqlalchemy_m import Process
+
+
+try:
+    pid = os.getpid()
+    db = get_db_unmanaged()
+    try:
+        process = db.query(Process).filter(Process.pid == pid).first()
+        if process is None:
+            raise Exception("Process not found.")
+    
+        process = ProcessInDb.model_validate(process)
+    except Exception as e:
+        log.error(f"Error getting process by PID: {e}")
+        db.close()
+        raise e
+    finally:
+        db.close()
+    
+
+except Exception as e:
+    log.error(f"Error getting process by PID: {e}")
+    raise e
+
+
+INSTANCE_COUNT = process.process_metadata["instance_count"]
+
+
+log.warning(f"Amount of instances: {INSTANCE_COUNT}")
+
 total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)
 total_ram = psutil.virtual_memory().total / (1024 * 1024) #in MB
 log.info(f"Total VRAM {total_vram:0.0f} MB, total RAM {total_ram:0.0f} MB")
+total_vram = total_vram / INSTANCE_COUNT
 if lowvram_available and total_vram <= 4096:
     log.info("Trying to enable lowvram mode because your GPU seems to have 4GB or less. If you don't want this use: --always-normal-vram")
     set_vram_to = VRAMState.LOW_VRAM
@@ -517,7 +552,7 @@ def unet_manual_cast(weight_dtype, inference_device):
     if weight_dtype == torch.float32:
         return None
 
-    fp16_supported = ldm_patched.modules.model_management.should_use_fp16(inference_device, prioritize_performance=False)
+    fp16_supported = model_management.should_use_fp16(inference_device, prioritize_performance=False)
     if fp16_supported and weight_dtype == torch.float16:
         return None
 
@@ -657,6 +692,7 @@ def pytorch_attention_flash_attention():
         if is_nvidia(): #pytorch flash attention only works on Nvidia
             return True
     return False
+
 
 def get_free_memory(dev=None, torch_free_too=False):
     global directml_enabled
