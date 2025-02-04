@@ -157,19 +157,26 @@ def get_photo_genobject(
 
 
 
-def main_entry(process_uuid=get_random_string(), max_processes=4):
+def main_entry(process_uuid=get_random_string(), process_count: int = 0, max_processes=4):
+    if process_count == 0:
+        raise ValueError("No process count provided.")
+    
     if process_uuid == None:
         log.error("No entry value provided.")
         sys.exit(1)
     else:
-        shared.GLOBAL_GUNICORN_ID = process_uuid
-        shared.MAX_PROCESSES = max_processes
-        img_processor_globlal.create_image_processor()
+        log.info(f"Process UUID: {process_uuid}")   
+        log.info(f"Process count: {process_count}")
+        log.info(f"Max processes: {max_processes}")
+        shared.GLOBAL_GUNICORN_ID = process_uuid # GLOBAL VAR USAGE
+        shared.MAX_PROCESSES = max_processes # GLOBAL VAR USAGE
+        shared.INSTANCE_COUNT = process_count # GLOBAL VAR USAGE
+        img_processor_globlal.create_image_processor() # GLOBAL VAR USAGE
         return app
 
 
 if __name__ == "__main__":
-    app = main_entry()
+    app = main_entry(str(uuid4()), 1, 5)
     uvicorn.run(
         app, port=IMAGEN_BACKEND_PORT
     )
