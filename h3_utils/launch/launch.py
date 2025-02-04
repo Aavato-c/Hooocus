@@ -13,7 +13,7 @@ import platform
 from modules.model_file_utils.hash_cache import init_cache, load_cache_from_file
 from h3_utils.launch.launch_util import is_installed, run, python, run_pip, delete_folder_content
 from modules.model_file_utils.model_loader import load_file_from_url
-from h3_utils.config import HOOOCUS_VERSION, GlobalEnv, LAUNCH_ARGS
+from h3_utils.config import LAUNCH_ARGS
 from h3_utils.flags import LORA_FILENAMES, MODEL_FILENAMES
 from h3_utils.path_configs import FolderPathsConfig
 from h3_utils.logging_util import LoggingUtil
@@ -22,7 +22,7 @@ log = LoggingUtil(__name__).get_logger()
 args = LAUNCH_ARGS
 
 log.info(f"Python {sys.version}")
-log.info(f"Hooocus version: {HOOOCUS_VERSION}")
+log.info(f"Hooocus version: {LAUNCH_ARGS.hooocus_version}")
 
 
 vae_approx_filenames = [
@@ -42,14 +42,14 @@ def prepare_environment():
     requirements_file = os.environ.get('REQS_FILE', "requirements.txt")
 
     log.info(f"Python {sys.version}")
-    log.info(f"Hooocus version: {HOOOCUS_VERSION}")
+    log.info(f"Hooocus version: {LAUNCH_ARGS.hooocus_version}")
 
     torch_installed = is_installed("torch")
     torchvision_installed = is_installed("torchvision")
     if not torch_installed or not torchvision_installed:
         run(f'"{python}" -m {torch_command}', "Installing torch and torchvision", "Couldn't install torch", live=True)
 
-    if GlobalEnv.TRY_INSTALL_XFORMERS:
+    if LAUNCH_ARGS.try_install_xformers:
         xformers_installed = is_installed("xformers")
         if not xformers_installed:
             xformers_package = os.environ.get('XFORMERS_PACKAGE', 'xformers==0.0.23')
