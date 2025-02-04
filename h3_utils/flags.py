@@ -126,7 +126,7 @@ class SDXL_ASPECT_RATIOS_CLASS:
         R_1024_960 = "1024*960"
 
 
-INPUT_IMAGE_MODES = Literal["uov", "inpaint", "ip", "desc", "enhance", "metadata", "mask"]
+INPUT_IMAGE_MODES = Literal["uov", "inpaint", "inpaint_mask", "ip", "desc", "enhance", "metadata", "mask"]
 
 
 class INPUT_IMAGE_MODES_CLASS:
@@ -136,6 +136,7 @@ class INPUT_IMAGE_MODES_CLASS:
         return "uov"
     ip = "ip"
     inpaint = "inpaint"
+    inpaint_mask = "inpaint_mask"
     desc = "desc"
     enhance = "enhance"
     metadata = "metadata"
