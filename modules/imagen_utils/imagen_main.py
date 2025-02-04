@@ -338,9 +338,11 @@ def yield_temps_if_streaming(
 
             temp_status = crud.should_generate_or_url(db, unique_id)
             log.debug(f"Temp status: {temp_status}")
-            if iterations > 1000:
+            if iterations > 100:
                 log.error(f"Iterations exceeded in temp yilder: {iterations}")
                 final_yielded = True
+                crud.modify_process_state(db, unique_id, GenerationStates.NOT_STARTED)
+                global_model_management.global_model_management.interrupt_current_processing()
 
             if final_yielded == True:
                 log.debug("In temp yield: Got final yield.")
