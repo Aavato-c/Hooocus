@@ -202,6 +202,8 @@ class InputImageType(BaseModel):
     input_image_type: Optional[INPUT_IMAGE_MODES] = None
     input_image: Optional[CustomNDArrayType] = None
 
+ListOfInputImageType = List[InputImageType]
+
 
 class _InitialImageGenerationParams(BaseModel):
     class Config:
