@@ -14,7 +14,6 @@ sys.path.append(ROOT_DIR)
 
 from extras.facexlib.detection.retinaface import RetinaFace
 from h3_utils.logging_util import LoggingUtil
-from ldm_patched.controlnet.cldm import ControlNet
 
 from enum import Enum
 

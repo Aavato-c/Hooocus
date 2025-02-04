@@ -6,7 +6,7 @@
 
 import numpy as np
 import torch
-from ldm_patched.modules import model_management
+from unavoided_globals import model_management
 from ldm_patched.modules.model_patcher import ModelPatcher
 
 from segment_anything.modeling import Sam

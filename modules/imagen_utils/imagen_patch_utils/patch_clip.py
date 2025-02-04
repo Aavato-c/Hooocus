@@ -11,7 +11,7 @@ import ldm_patched.ldm.modules.diffusionmodules.openaimodel
 import ldm_patched.ldm.modules.diffusionmodules.openaimodel
 from h3_utils.config import LAUNCH_ARGS as args
 import ldm_patched.modules.model_base
-import ldm_patched.modules.model_management
+import unavoided_globals.model_management
 import ldm_patched.modules.model_patcher
 import ldm_patched.modules.samplers
 import ldm_patched.modules.sd
@@ -40,7 +40,7 @@ def patched_encode_token_weights(self, token_weight_pairs):
 
     out, pooled = self.encode(to_encode)
     if pooled is not None:
-        first_pooled = pooled[0:1].to(ldm_patched.modules.model_management.intermediate_device())
+        first_pooled = pooled[0:1].to(unavoided_globals.model_management.intermediate_device())
     else:
         first_pooled = pooled
 
@@ -60,8 +60,8 @@ def patched_encode_token_weights(self, token_weight_pairs):
         output.append(z)
 
     if len(output) == 0:
-        return out[-1:].to(ldm_patched.modules.model_management.intermediate_device()), first_pooled
-    return torch.cat(output, dim=-2).to(ldm_patched.modules.model_management.intermediate_device()), first_pooled
+        return out[-1:].to(unavoided_globals.model_management.intermediate_device()), first_pooled
+    return torch.cat(output, dim=-2).to(unavoided_globals.model_management.intermediate_device()), first_pooled
 
 
 def patched_SDClipModel__init__(self, max_length=77, freeze=True, layer="last", layer_idx=None,
@@ -151,10 +151,10 @@ def patched_SDClipModel_forward(self, tokens):
 def patched_ClipVisionModel__init__(self, json_config):
     config = CLIPVisionConfig.from_json_file(json_config)
 
-    self.load_device = ldm_patched.modules.model_management.text_encoder_device()
-    self.offload_device = ldm_patched.modules.model_management.text_encoder_offload_device()
+    self.load_device = unavoided_globals.model_management.text_encoder_device()
+    self.offload_device = unavoided_globals.model_management.text_encoder_offload_device()
 
-    if ldm_patched.modules.model_management.should_use_fp16(self.load_device, prioritize_performance=False):
+    if unavoided_globals.model_management.should_use_fp16(self.load_device, prioritize_performance=False):
         self.dtype = torch.float16
     else:
         self.dtype = torch.float32
@@ -172,7 +172,7 @@ def patched_ClipVisionModel__init__(self, json_config):
 
 
 def patched_ClipVisionModel_encode_image(self, image):
-    ldm_patched.modules.model_management.load_model_gpu(self.patcher)
+    unavoided_globals.model_management.load_model_gpu(self.patcher)
     pixel_values = ldm_patched.modules.clip_vision.clip_preprocess(image.to(self.load_device))
     outputs = self.model(pixel_values=pixel_values, output_hidden_states=True)
 
@@ -180,10 +180,10 @@ def patched_ClipVisionModel_encode_image(self, image):
         t = outputs[k]
         if t is not None:
             if k == 'hidden_states':
-                outputs["penultimate_hidden_states"] = t[-2].to(ldm_patched.modules.model_management.intermediate_device())
+                outputs["penultimate_hidden_states"] = t[-2].to(unavoided_globals.model_management.intermediate_device())
                 outputs["hidden_states"] = None
             else:
-                outputs[k] = t.to(ldm_patched.modules.model_management.intermediate_device())
+                outputs[k] = t.to(unavoided_globals.model_management.intermediate_device())
 
     return outputs
 

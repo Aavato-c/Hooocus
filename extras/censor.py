@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from transformers import CLIPConfig, CLIPImageProcessor
 
-import ldm_patched.modules.model_management as model_management
+import unavoided_globals.model_management as model_management
 import h3_utils.config
 from extras.safety_checker.models.safety_checker import StableDiffusionSafetyChecker
 from modules.model_file_utils.model_file_config import SafetyCheckModel

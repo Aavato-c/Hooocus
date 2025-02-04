@@ -6,7 +6,7 @@ import numpy as np
 from einops import rearrange
 from typing import Optional, Any
 
-from ldm_patched.modules import model_management
+from unavoided_globals import model_management
 import ldm_patched.modules.ops
 ops = ldm_patched.modules.ops.disable_weight_init
 

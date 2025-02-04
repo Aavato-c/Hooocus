@@ -1,11 +1,13 @@
-import os
+import os, sys
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__).split("ldm_patched")[0])
+sys.path.append(ROOT_DIR)
 
 from transformers import CLIPTokenizer
 import ldm_patched.modules.ops
 import torch
 import traceback
 import zipfile
-from . import model_management
+from unavoided_globals import model_management
 import ldm_patched.modules.clip_model
 import json
 

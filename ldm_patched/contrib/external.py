@@ -29,7 +29,7 @@ import ldm_patched.modules.controlnet
 
 import ldm_patched.modules.clip_vision
 
-import ldm_patched.modules.model_management
+import unavoided_globals.model_management
 
 from h3_utils.config import LAUNCH_ARGS as args
 
@@ -1010,7 +1010,7 @@ class GLIGENTextBoxApply:
 
 class EmptyLatentImage:
     def __init__(self):
-        self.device = ldm_patched.modules.model_management.intermediate_device()
+        self.device = unavoided_globals.model_management.intermediate_device()
 
     @classmethod
     def INPUT_TYPES(s):

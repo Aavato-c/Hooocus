@@ -24,7 +24,7 @@ except ImportError:
 from torch import Tensor
 from typing import List
 
-from ldm_patched.modules import model_management
+from unavoided_globals import model_management
 
 def dynamic_slice(
     x: Tensor,

@@ -9,7 +9,7 @@ import safetensors.torch as sf
 
 from modules.imagen_utils.imagen_patch_utils.ops import use_patched_ops
 import ldm_patched.modules.clip_vision
-import ldm_patched.modules.model_management as model_management
+import unavoided_globals.model_management as model_management
 import ldm_patched.ldm.modules.attention as attention
 from ldm_patched.modules.model_patcher import ModelPatcher
 from ldm_patched.modules.ops import manual_cast

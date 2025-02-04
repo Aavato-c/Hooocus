@@ -13,7 +13,7 @@ import torch
 
 import h3_utils.config
 import h3_utils.flags
-import ldm_patched.modules.model_management
+import unavoided_globals.model_management
 import ldm_patched.modules.latent_formats
 import modules.imagen_utils.inpaint_worker
 import extras.vae_interpose as vae_interpose
@@ -22,7 +22,7 @@ from extras.expansion import FooocusExpansion
 from ldm_patched.modules.model_base import SDXL, SDXLRefiner
 from modules.imagen_utils.imagen_patch_utils.sample_hijack import clip_separate
 from modules.util import get_file_from_folder_list, get_enabled_loras
-from h3_utils.config import LAUNCH_ARGS, DefaultConfigImageGen
+from h3_utils.config import DefaultConfigImageGen
 from h3_utils.logging_util import LoggingUtil
 
 from unavoided_globals.unavoided_global_vars import patch_settings_GLOBAL_CAUTION
@@ -228,7 +228,7 @@ class DefaultPipeline:
             # TODO: make sure that this is always called in an async way so that users cannot feel it.
             pass
         self.assert_model_integrity()
-        ldm_patched.modules.model_management.load_models_gpu([self.final_clip.patcher, self.final_expansion.patcher])
+        unavoided_globals.model_management.load_models_gpu([self.final_clip.patcher, self.final_expansion.patcher])
         return
 
     @torch.no_grad()
@@ -399,7 +399,7 @@ class DefaultPipeline:
         print(f'[Sampler] sigma_min = {sigma_min}, sigma_max = {sigma_max}')
 
         modules.imagen_utils.imagen_patch_utils.patch.BrownianTreeNoiseSamplerPatched.global_init(
-            initial_latent['samples'].to(ldm_patched.modules.model_management.get_torch_device()),
+            initial_latent['samples'].to(unavoided_globals.model_management.get_torch_device()),
             sigma_min, sigma_max, seed=image_seed, cpu=False)
 
         decoded_latent = None

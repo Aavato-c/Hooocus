@@ -1,6 +1,6 @@
 import os
 import torch
-import ldm_patched.modules.model_management as model_management
+import unavoided_globals.model_management as model_management
 
 from torchvision import transforms
 from torchvision.transforms.functional import InterpolationMode

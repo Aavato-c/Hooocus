@@ -10,7 +10,7 @@ from ldm_patched.k_diffusion import sampling as k_diffusion_sampling
 from ldm_patched.unipc import uni_pc
 import torch
 import collections
-from ldm_patched.modules import model_management
+from unavoided_globals import model_management
 import math
 
 perflog = PerfLogger("sampling").get_logger()
