@@ -14,8 +14,8 @@ from h3_utils.flags import (
 log = LoggingUtil(__name__).get_logger()
 
 
-HOOOCUS_VERSION = "0.5.2-alpha"
-METADATA_SCHEME = "Hooocus"
+
+
 
 class _LAUNCH_ARGS(BaseModel):
     # Modify the initial values here
@@ -23,34 +23,19 @@ class _LAUNCH_ARGS(BaseModel):
         arbitrary_types_allowed = True
 
     # General args
-    enable_auto_describe_image: bool = Field(
-        False,
-        description="Enables automatic description of uov and enhance image when prompt is empty.",
-    )
+    hooocus_version: str = "0.5.2-alpha"
+    metadata_scheme: str = "Hooocus"
+    enable_auto_describe_image: bool = Field(False,description="Enables automatic description of uov and enhance image when prompt is empty.",)
     preview_option: LatentPreviewMethod = LatentPreviewMethod.Auto
     wildcards_max_bfs_depth: int = 64
-    disable_image_log: bool = Field(
-        False, description="Prevent writing images and logs to the outputs folder."
-    )
-    disable_analytics: bool = Field(False, description="Disables analytics for Gradio.")
-    disable_metadata: bool = Field(
-        False, description="Disables saving metadata to images."
-    )
-    disable_preset_download: bool = Field(
-        False, description="Disables downloading models for presets."
-    )
-    disable_enhance_output_sorting: bool = Field(
-        False, description="Disables enhance output sorting for final image gallery."
-    )
-    always_download_new_model: bool = Field(
-        False, description="Always download newer models."
-    )
-    rebuild_hash_cache: bool = Field(
-        False, description="Generates missing model and LoRA hashes."
-    )
-    temp_path_cleanup_on_launch: bool = Field(
-        True, description="The temp path cleanup on launch to use."
-    )
+    disable_image_log: bool = Field(False, description="Prevent writing images and logs to the outputs folder.")
+    #disable_analytics: bool = Field(False, description="Disables analytics for Gradio.")
+    disable_metadata: bool = Field(False, description="Disables saving metadata to images.")
+    disable_preset_download: bool = Field(False, description="Disables downloading models for presets.")
+    disable_enhance_output_sorting: bool = Field(False, description="Disables enhance output sorting for final image gallery.")
+    always_download_new_model: bool = Field(False, description="Always download newer models.")
+    rebuild_hash_cache: bool = Field(False, description="Generates missing model and LoRA hashes.")
+    temp_path_cleanup_on_launch: bool = Field(True, description="The temp path cleanup on launch to use.")
     should_check_for_updates: bool = False
 
     # Etc
@@ -107,11 +92,17 @@ class _LAUNCH_ARGS(BaseModel):
     # VramArgs
     always_cpu: bool = False
     always_gpu: bool = True
-    always_high_vram: bool = True
+    always_high_vram: bool = False
     always_normal_vram: bool = False
     always_low_vram: bool = False
     always_no_vram: bool = False
     always_offload_from_vram: bool = False
 
+    # InstallArgs
+    try_install_xformers: bool = False
+
 
 LAUNCH_ARGS = _LAUNCH_ARGS()
+
+METADATA_SCHEME = LAUNCH_ARGS.metadata_scheme
+HOOOCUS_VERSION = LAUNCH_ARGS.hooocus_version
