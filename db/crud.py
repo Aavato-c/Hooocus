@@ -285,9 +285,15 @@ def add_process(
         log.error(f"Error adding process: {e}")
         raise e
     
-def modify_process_state(db: Session, process_in_update: pm.ProcessInUpdate) -> bool:
+def modify_process_state(db: Session, unique_id: UUIDType, new_state: str) -> bool:
+    log.info(f"Modifying process state for process with ID: {unique_id}")
     try:
-        db.query(sm.Process).filter(sm.Process.id == process_in_update.id).update(**process_in_update.model_dump())
+        process = db.query(sm.Process).filter(sm.Process.id == unique_id).first()
+        if process is None:
+            log.warning(f"Process with ID: {unique_id} not found")
+            return False
+        process.process_state = new_state
+        process.updated_at = get_timestamp()
         db.commit()
         return True
     except Exception as e:
