@@ -33,19 +33,6 @@ log = LoggingUtil("Test_db_setup").get_logger()
 
 Base: DeclarativeBase = dbm.Base
 
-""" if FORMAT_TEST_DATABASE:
-    try:
-        master_engine = create_engine(DB_URL_MASTER).execution_options(isolation_level="AUTOCOMMIT")
-        conn = master_engine.connect()
-        log.info(f"Dropping test database {DB_NAME_TEST}")
-        conn.execute(text(f'DROP DATABASE IF EXISTS {DB_NAME_TEST} WITH (FORCE)'))
-        log.info(f"Creating test database {DB_NAME_TEST}")
-        conn.execute(text(f'CREATE DATABASE {DB_NAME_TEST}'))
-    finally:
-        conn.close()
-        master_engine.dispose()
-        master_engine.clear_compiled_cache()
-        time.sleep(10) """
 
 main_engine = create_engine(consts.DB_URL_TEST)
 Base.metadata.create_all(bind=main_engine)
@@ -54,7 +41,6 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=main_engine)
 # GLOBAL VAR USAGE
 # Affects the database connection in db/database.py (get_db_unmanaged)
 consts.TESTING = "True"
-
 
 def get_test_db():
     db = SessionLocal()

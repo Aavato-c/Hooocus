@@ -159,16 +159,10 @@ def get_photo_genobject(
         log.debug(f"Adding image order: \n\n{request_validated.model_dump()}\n\n")
 
         if request_validated.uid != "":
-            log.info(
-                f"Adding image order with UID: {request_validated.uid}. UID was provided."
-            )
-            uuid_of_order = crud.add_imageorder(
-                db, request_validated, request_validated.uid
-            )
+            log.info(f"Adding image order with UID: {request_validated.uid}. UID was provided.")
+            uuid_of_order = crud.add_imageorder(db, request_validated, request_validated.uid)
         else:
-            log.debug(
-                f"Adding image order: {request_validated.uid}. No UID was provided."
-            )
+            log.debug(f"Adding image order: {request_validated.uid}. No UID was provided.")
             uuid_of_order = crud.add_imageorder(db, request_validated)
         return JSONResponse(
             content={
@@ -205,7 +199,5 @@ def main_entry(process_uuid=get_random_string(), process_count: int = 0, max_pro
 
 if __name__ == "__main__":
     app = main_entry(str(uuid4()), 1, 5)
-    uvicorn.run(
-        app, port=IMAGEN_BACKEND_PORT
-    )
+    uvicorn.run(app, port=IMAGEN_BACKEND_PORT)
 

@@ -281,15 +281,16 @@ class FaceXLibModelFiles:
 class BaseControlNetTask(BaseModel):
     class Config:
         arbitrary_types_allowed = True
-    
-    ip_conds: Optional[List[Any]] = None
-    ip_unconds: Optional[List[Any]] = None
+
     stop: float = Field(0.5, ge=0, le=1)
     img: Optional[numpy.ndarray] = None
     image_url: Optional[str] = None
     weight: float = Field(1.0, ge=0, le=1)
-    all_models: Optional[List[_BaseControlNetModelFile]] = None
     name: str = Field(None, description="Name of the ControlNetTask.")
+    
+    ip_conds: Optional[List[Any]] = None
+    ip_unconds: Optional[List[Any]] = None
+    all_models: Optional[List[_BaseControlNetModelFile]] = None
     paths_of_models: Optional[List[str]] = None
 
     def get_paths(self):
@@ -318,34 +319,21 @@ class ControlNetTasks:
         img = None,
         name = CONTROLNET_TASK_TYPES_CLASS.IpFace,
         weight = 0.75,
-        all_models = [
-            ImagePromptClipVIsion,
-            ImagePromptAdapterFace,
-            ImagePromptAdapterNegative
-        ],
-    )
+        all_models = [ImagePromptClipVIsion, ImagePromptAdapterFace, ImagePromptAdapterNegative])
 
     PyraCanny: BaseControlNetTask = BaseControlNetTask(
         stop = 0.5,
         img = None,
         name = CONTROLNET_TASK_TYPES_CLASS.PyraCanny,
         weight = 1.0,
-        all_models = [
-            PyraCanny
-        ]
-
-        )
+        all_models = [PyraCanny])
 
     CPDS: BaseControlNetTask = BaseControlNetTask(
         stop = 0.5,
         img = None,
         name = CONTROLNET_TASK_TYPES_CLASS.CPDS,
         weight = 1.0,
-        all_models = [
-            CPDS
-        ]
-    )
-
+        all_models = [CPDS])
 
 def controlnet_task_by_name(name: str, update_with: dict):
     match name:

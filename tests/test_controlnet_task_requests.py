@@ -1,4 +1,6 @@
 import os, sys
+
+from modules.model_file_utils.model_file_config import ControlNetTasks
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(CURR_DIR.split("tests")[0])
 
@@ -30,9 +32,10 @@ class DataManager:
 def data_manager_fixture() -> DataManager:
     return DataManager()
 
-def test_create_image_order(data_manager: DataManager):
+def test_create_image_order_cdps(data_manager: DataManager):
     new_image_order = ImageGenerationObject()
     new_image_order.prompt = "Cat oil painting sun moon smoke classical museum portrait painting oil on canvas rembrandt"
+    cdps_task = ControlNetTasks.
     response = data_manager.session.post(f"{url_base}/gen/photo/normal", data=new_image_order.model_dump_json(), headers=data_manager.headers_for_auth)
     if response.status_code == 201:
         assert True

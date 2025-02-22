@@ -162,6 +162,7 @@ class CONTROLNET_TASK_TYPES_CLASS:
     IpFace = "ip_face"
     PyraCanny = "PyraCanny"
     CPDS = "CPDS"
+    LIT = Literal["ImagePrompt", "ip_face", "PyraCanny", "CPDS"]
 
 
 EXAMPLE_ENHANCE_DETECTION_PROMPTS = (["face", "eye", "mouth", "hair", "hand", "body"],)

@@ -8,6 +8,7 @@ from attr import validate
 rootdir = os.path.abspath(__file__).split("Hooocus")[0] + "Hooocus"
 sys.path.append(rootdir)
 
+from modules.model_file_utils.model_file_config import BaseControlNetTask
 from modules.sdxl_styles.prompt_styles import (
     METASTYLES_LIT,
     VALID_STYLE_NAMES,
@@ -37,33 +38,30 @@ from numpy.typing import NDArray
 
 from h3_utils.logging_util import LoggingUtil
 from h3_utils.flags import (
+    CONTROLNET_TASK_TYPES_CLASS,
+    DESCRIBE_TYPE_PHOTO,
+    ENHANCEMENT_UOV_BEFORE,
+    ENHANCEMENT_UOV_PROMPT_TYPE_ORIGINAL,
     EXAMPLE_ENHANCE_DETECTION_PROMPTS,
     INPAINT_MASK_CLOTH_CATEGORY,
-    YIELD_TYPE_FLAGS,
-    yield_types,
     INPUT_IMAGE_MODES,
+    KSAMPLER_NAMES_LIT,
     KSAMPLER,
     OUTPAINT_SELECTIONS,
-    REFINER_SWAP_METHODS,
-    SDXL_ASPECT_RATIOS,
-    UPSCALE_OR_VARIATION_MODES,
+    OUTPUTFORMAT_LIT,
     OutputFormat,
     Performance,
-    ENHANCEMENT_UOV_BEFORE,
-)
-from h3_utils.flags import (
-    DESCRIBE_TYPE_PHOTO,
-    ENHANCEMENT_UOV_PROMPT_TYPE_ORIGINAL,
-    KSAMPLER_NAMES_LIT,
-    OUTPUTFORMAT_LIT,
+    REFINER_SWAP_METHODS,
     REFINER_SWAP_METHODS,
     SCHEDULER_NAMES_CLS,
     SCHEDULER_NAMES_LITERAL,
-    SDXL_ASPECT_RATIOS,
     SDXL_ASPECT_RATIOS_CLASS,
+    SDXL_ASPECT_RATIOS,
+    SDXL_ASPECT_RATIOS,
     UPSCALE_OR_VARIATION_MODES,
-    Overrides,
-    Steps,
+    UPSCALE_OR_VARIATION_MODES,
+    YIELD_TYPE_FLAGS,
+    yield_types,
 )
 from h3_utils.launch_args import METADATA_SCHEME, LAUNCH_ARGS
 import traceback
@@ -76,7 +74,6 @@ preset_chosen: str = "default"  # Modify this to change the preset
 current_preset = {}
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "outputs")
 CustomNDArrayType: TypeAlias = Union[NDArray, List[NDArray]]
-
 
 SCHEMA_VERSION = "25.01.22.V1"
 
@@ -183,19 +180,42 @@ class EnhanceMaskCtrls(BaseModel):
 
 
 class BaseControlNetTaskForRequests(BaseModel):
-
     stop: float = Field(0.5, ge=0, le=1)
     img: Optional[Any] = None
     image_url: Optional[str] = None
     weight: float = Field(1.0, ge=0, le=1)
-    name: str = Field(None, description="Name of the ControlNetTask.")
+    name: CONTROLNET_TASK_TYPES_CLASS.LIT = Field(None, description="Name of the ControlNetTask.")
 
-    # Not used in requests
-    ip_conds: Optional[Any] = None
-    ip_unconds: Optional[Any] = None
-    all_models: Optional[List[dict | object]] = None
-    paths_of_models: Optional[List[str]] = None
+class ControlNetTaskTemplatesForRequests:
 
+    ImagePrompt = BaseControlNetTaskForRequests(
+        stop = 0.5,
+        name = CONTROLNET_TASK_TYPES_CLASS.ImagePrompt,
+        weight = 0.6,
+        img = None
+        )
+    
+    FaceSwap = BaseControlNetTaskForRequests(
+        stop = 0.9,
+        img = None,
+        name = CONTROLNET_TASK_TYPES_CLASS.IpFace,
+        weight = 0.75
+        )
+
+    PyraCanny = BaseControlNetTaskForRequests(
+        stop = 0.5,
+        img = None,
+        name = CONTROLNET_TASK_TYPES_CLASS.PyraCanny,
+        weight = 1.0
+        )
+
+    """Image will be decolorized keeping the same structure"""
+    CPDS = BaseControlNetTaskForRequests(
+        stop = 0.5,
+        img = None,
+        name = CONTROLNET_TASK_TYPES_CLASS.CPDS,
+        weight = 1.0
+        )
 
 class InputImageType(BaseModel):
     input_image_url: Optional[str] = None
@@ -285,7 +305,7 @@ class _InitialImageGenerationParams(BaseModel):
     enhance_task: Optional[EnhanceMaskCtrls] = None
     freeu_controls: Optional[FreeUControls] = None
     inpaint_options: Optional[InptaintOptions] = None
-    controlnet_tasks: Optional[List[BaseControlNetTaskForRequests]] = []
+    controlnet_tasks: Optional[List[BaseControlNetTask]] = []
     overwrite_controls: Optional[OverWriteControls] = None
     developer_options: Optional[DeveloperOptions] = DeveloperOptions()
 
@@ -532,9 +552,13 @@ class ImageGenerationObject(_InitialImageGenerationParams):
             self.styles = corrected_styles
 
 
+
 class ImageGenerationObjectForRequests(BaseModel):
     class Config:
         arbitrary_types_allowed = True
+
+    def update_seed(self):
+        self.seed = random.randint(0, 2**63 - 1)
 
     schema_version: Optional[str] = Field(SCHEMA_VERSION, description="Current schema version.")
     uid: Optional[str] = ""
@@ -549,25 +573,13 @@ class ImageGenerationObjectForRequests(BaseModel):
     width: Optional[int] = Field(None, description="The default width to use.")
     height: Optional[int] = Field(None, description="The default height to use.")
 
-    sample_sharpness: float = Field(
-        2.0, description="The default sample sharpness to use.", ge=0.0, le=30.0
-    )
-    seed: int = Field(
-        random.randint(0, 2**63 - 1), description="The default seed to use."
-    )
+    sample_sharpness: float = Field(2.0, description="The default sample sharpness to use.", ge=0.0, le=30.0)
+    seed: int = Field(random.randint(0, 2**63 - 1), description="The default seed to use.")
     do_not_update_seed: bool = False
     sampler_name: KSAMPLER_NAMES_LIT = "dpmpp_2m_sde_gpu"
     scheduler_name: str = "karras"
-
-    base_model_name: str = Field(
-        "juggernautXL_v8Rundiffusion.safetensors",
-        description="The default model to use.",
-        alias="model",
-    )
-    refiner_model: str | bool = Field(
-        False,
-        description="The default refiner model to use.",
-    )
+    base_model_name: str = Field("juggernautXL_v8Rundiffusion.safetensors", description="The default model to use.", alias="model")
+    refiner_model: str | bool = Field(False, description="The default refiner model to use.",)
     refiner_switch: float = Field(0.5, description="Refiner switch", ge=0.0, le=1.0)
     refiner_swap_method: REFINER_SWAP_METHODS = "joint"
     loras: list = Field(
@@ -580,16 +592,8 @@ class ImageGenerationObjectForRequests(BaseModel):
         ],
         description="The default LoRAs to use.",
     )
-    styles: List[str] = Field(
-        [
-            "Fooocus_V2",
-            "Fooocus_Enhance",
-        ],
-        description="The default styles to use.",
-    )
-
+    styles: List[str] = Field(["Fooocus_V2", "Fooocus_Enhance"], description="The default styles to use.")
     vae_name: str = Field("Default (model)", description="The default vae to use.")
-
     performance_selection: Performance | str = Performance.SPEED.value
 
     @field_validator("performance_selection", mode="before")
@@ -599,60 +603,30 @@ class ImageGenerationObjectForRequests(BaseModel):
         return v
 
     # Format and save options
-    output_format: OUTPUTFORMAT_LIT = Field(
-        OutputFormat.WEBP, description="Output format"
-    )
-    save_metadata_to_images: bool = Field(
-        False, description="The default save metadata to images to use."
-    )
-    save_only_final_enhanced_image: bool = Field(
-        False, description="The default save only final enhanced image to use."
-    )
-    aspect_ratio: SDXL_ASPECT_RATIOS = Field(
-        SDXL_ASPECT_RATIOS_CLASS.PORTRAIT.R832_1152,
-        description="The default aspect ratio to use.",
-    )
+    output_format: OUTPUTFORMAT_LIT = Field(OutputFormat.WEBP, description="Output format")
+    save_metadata_to_images: bool = Field(False, description="The default save metadata to images to use.")
+    save_only_final_enhanced_image: bool = Field(False, description="The default save only final enhanced image to use.")
+    aspect_ratio: SDXL_ASPECT_RATIOS = Field(SDXL_ASPECT_RATIOS_CLASS.PORTRAIT.R832_1152, description="The default aspect ratio to use.")
 
     # ERROR HERE
-    adaptive_cfg: float = Field(
-        7.0, description="The default cfg tsnr to use.", ge=1.0, le=30.0
-    )
-    cfg_scale: float = Field(
-        4.0,
-        description="Higher value means style is cleaner, vivider, and more artistic.",
-        ge=1.0,
-        le=30.0,
-    )
+    adaptive_cfg: float = Field(7.0, description="The default cfg tsnr to use.", ge=1.0, le=30.0)
+    cfg_scale: float = Field(4.0,description="Higher value means style is cleaner, vivider, and more artistic.", ge=1.0, le=30.0)
     cfg_tsnr: float = Field(7.0, description="The default cfg tsnr to use.")
 
-    adm_scaler_end: float = Field(
-        0.3, description="The default adm scaler end to use.", ge=0.0, le=1.0
-    )
-    adm_scaler_negative: float = Field(
-        0.8, description="The default adm scaler negative to use.", ge=0.1, le=3.0
-    )
-    adm_scaler_positive: float = Field(
-        1.5, description="The default adm scaler positive to use.", ge=0.1, le=3.0
-    )
+    adm_scaler_end: float = Field(0.3, description="The default adm scaler end to use.", ge=0.0, le=1.0)
+    adm_scaler_negative: float = Field(0.8, description="The default adm scaler negative to use.", ge=0.1, le=3.0)
+    adm_scaler_positive: float = Field(1.5, description="The default adm scaler positive to use.", ge=0.1, le=3.0)
 
-    canny_high_threshold: int = Field(
-        128, description="The default canny high threshold to use.", ge=0, le=255
-    )
-    canny_low_threshold: int = Field(
-        64, description="The default canny low threshold to use.", ge=0, le=255
-    )
+    canny_high_threshold: int = Field(128, description="The default canny high threshold to use.", ge=0, le=255)
+    canny_low_threshold: int = Field(64, description="The default canny low threshold to use.", ge=0, le=255)
 
-    controlnet_softness: float = Field(
-        0.25, description="The default controlnet softness to use.", ge=0.0, le=1.0
-    )
+    controlnet_softness: float = Field(0.25, description="The default controlnet softness to use.", ge=0.0, le=1.0)
     dino_erode_or_dilate: int = 0  # min -64 max 64
 
     controlnet_tasks: Optional[List[BaseControlNetTaskForRequests]] = None
     overwrite_controls: Optional[OverWriteControls] = None
 
-    image_input_mode: INPUT_IMAGE_MODES = Field(
-        "uov", description="The image input mode to use."
-    )  # utils.flags.input_image_tab_ids
+    image_input_mode: INPUT_IMAGE_MODES = Field("uov", description="The image input mode to use.")  # utils.flags.input_image_tab_ids
 
     input_image: Optional[Dict[Literal["image", "mask"], Any]] = None
     input_image_url: Optional[str] = None
@@ -664,6 +638,9 @@ class ImageGenerationObjectForRequests(BaseModel):
 
 DefaultConfigImageGen = ImageGenerationObject()
 
+LandscapeFormatDefault = ImageGenerationObject(
+    aspect_ratio=SDXL_ASPECT_RATIOS_CLASS.LANDSCAPE.R_1280_768
+)
 
 """
 with open("hoocus_config.json", "w") as f:

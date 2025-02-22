@@ -44,61 +44,6 @@ class DataManager:
 @pytest.fixture(name="data_manager", scope="module", autouse=True)
 def data_manager_fixture() -> DataManager:
     return DataManager()
-""" 
-def test_create_image_order(data_manager: DataManager):
-    new_image_order = ImageGenerationObjectForRequests()
-    new_image_order.prompt = "Cat oil painting sun moon smoke classical museum portrait painting oil on canvas rembrandt"
-    response = data_manager.client.post("/gen/photo/normal", data=new_image_order.model_dump_json())
-    if response.status_code == 201:
-        assert True
-        response_json = response.json()
-    else:
-        log.error(f"Failed to create image order: {response.status_code}")
-    
-    assert "uuid" in response_json
-    uuid_of_photo = response_json["uuid"]
-    data_manager.uuid_of_photo = uuid_of_photo
-
-def test_getphoto(data_manager: DataManager):
-    uuid_of_photo = data_manager.uuid_of_photo
-
-    with data_manager.client.stream("GET", f"/photo/{uuid_of_photo}.webp") as response:
-        iternum = 0
-        for chunk in response.iter_bytes():
-            read_resp = chunk
-            iternum += 1
-
-    assert iternum > 0
-
-
-def test_genphoto(data_manager: DataManager):
-    uid = get_uuid()
-    test_request = ImageGenerationObjectForRequests(
-        sample_sharpness=10.5,
-        performance_selection=Performance.SPEED,
-        seed=random.randint(0, 100000),
-        prompt="A beautiful sunset over the ocean with two cats playing in the sand",
-        aspect_ratio=SDXL_ASPECT_RATIOS_CLASS.LANDSCAPE.R_1280_768,
-    )
-    response = data_manager.client.post("/gen/photo/normal", data=test_request.model_dump_json())
-    if response.status_code == 201:
-        assert True
-        response_json = response.json()
-    else:
-        log.error(f"Failed to create image order: {response.status_code}")
-
-    assert "uuid" in response_json
-    uuid_of_photo = response_json["uuid"]
-    data_manager.uuid_of_photo = uuid_of_photo
-
-    with data_manager.client.stream("GET", f"/gen/photo/{uuid_of_photo}.webp") as response:
-        iternum = 0
-        for chunk in response.iter_bytes():
-            read_resp = chunk
-            iternum += 1
-
-    assert iternum > 0 """
-
 
 def test_custom_request(data_manager: DataManager):
     response = data_manager.client.post("/gen/photo/normal", data=custom_req_new_uuid)
