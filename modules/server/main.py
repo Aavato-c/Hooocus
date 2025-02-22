@@ -1,9 +1,11 @@
 import os
 import sys
 
+
 ROOT_DIR = os.path.abspath(__file__).split("modules")[0]
 sys.path.append(ROOT_DIR)
 
+from h3_utils.flags import SDXL_ASPECT_RATIOS_CLASS
 from typing import Annotated
 from uuid import uuid4
 import uvicorn
@@ -15,9 +17,8 @@ from unavoided_globals import img_processor_globlal, shared
 
 from sqlalchemy.orm import Session
 
-from fastapi import FastAPI, HTTPException, Request, Response, Depends
-from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
-from fastapi.exceptions import RequestValidationError
+from fastapi import FastAPI, Form, HTTPException, Request, Response, Depends
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 
 from db.models.pydantic_m import GenerationStates
 from db.database import get_db
@@ -117,6 +118,33 @@ auth_doc = {
         }
     ]
 }
+
+@app.get("/imagen_manual")
+def get_manual():
+    return HTMLResponse(content=open("modules/server/imagen_manual.html", "r").read())
+
+@app.post("/testgen_photo")
+def get_photo_genobject(
+    password: Annotated[str, Form()], 
+    prompt: Annotated[str, Form()],
+    db: Session = Depends(get_db)):
+    
+    try:
+        corr_pass = os.getenv("PASSWORD_FOR_TESTING")
+        if password != corr_pass:
+            return JSONResponse(status_code=401)
+
+        imagen_request_base = ImageGenerationObjectForRequests()
+        imagen_request_base.update_seed()
+        imagen_request_base.prompt = prompt
+        imagen_request_base.aspect_ratio = SDXL_ASPECT_RATIOS_CLASS.LANDSCAPE.R_1216_832
+
+        uuid_of_order = crud.add_imageorder(db, imagen_request_base)
+        return RedirectResponse(f"/photo/{uuid_of_order}.webp", status_code=303)
+    
+    except Exception as e:
+        log.error(f"Error adding image order: {e}")
+        return JSONResponse(status_code=500)
 
 
 @app.post("/photo", openapi_extra=auth_doc)
