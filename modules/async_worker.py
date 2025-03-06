@@ -703,13 +703,13 @@ class ImageTaskProcessor:
                 raise e
 
     def prepare_controlnet_models(self):
-        ImagePromptClipVIsion.download_model()
-        ImagePromptAdapterNegative.download_model()
+        ImagePromptClipVIsion.download_or_get_path()
+        ImagePromptAdapterNegative.download_or_get_path()
 
         for controlnet_task in self.generation_task.controlnet_tasks:
             match controlnet_task.name:
                 case ControlNetTasks.ImagePrompt.name:
-                    ImagePromptAdapterPlus.download_model()
+                    _ip_ad_plus_path = ImagePromptAdapterPlus.download_or_get_path()
                     self.ip_adapter.load_ip_adapter(
                         self.clip_vision_path,
                         self.ip_negative_path,
@@ -717,15 +717,15 @@ class ImageTaskProcessor:
                     )
                     controlnet_task.paths_of_models = [self.ip_adapter_path]
                 case ControlNetTasks.FaceSwap.name:
-                    ImagePromptAdapterFace.download_model()
+                    ImagePromptAdapterFace.download_or_get_path()
                     self.ip_adapter.load_ip_adapter(self.clip_vision_path, self.ip_negative_path, self.ip_adapter_face_path)
                     controlnet_task.paths_of_models = [self.ip_adapter_face_path]
                 case ControlNetTasks.PyraCanny.name:
-                    PyraCanny.download_model()
+                    PyraCanny.download_or_get_path()
                     self.pipeline.refresh_controlnets([self.controlnet_pyracanny_path])
                     controlnet_task.paths_of_models = [self.controlnet_pyracanny_path]
                 case ControlNetTasks.CPDS.name:
-                    CPDS.download_model()
+                    CPDS.download_or_get_path()
                     self.pipeline.refresh_controlnets([self.controlnet_cpds_path])
                     controlnet_task.paths_of_models = [self.controlnet_cpds_path]
 

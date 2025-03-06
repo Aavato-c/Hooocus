@@ -73,39 +73,39 @@ class _BaseControlNetModelFile(_BaseModelFile):
     folder_path_of_model: str = FolderPathsConfig.path_controlnet
 
 ImagePromptClipVIsion = _BaseControlNetModelFile(
-    filename_of_model = "clip_vision_vit_h",
+    filename_of_model = "clip_vision_vit_h.safetensors",
     url_of_model = "https://huggingface.co/lllyasviel/misc/resolve/main/clip_vision_vit_h.safetensors",
-    basename_of_model = "clip_vision_vit_h.safetensors",
+    basename_of_model = "clip_vision_vit_h",
 )
 
 ImagePromptAdapterPlus = _BaseControlNetModelFile(
-    filename_of_model = "ip-adapter-plus",
+    filename_of_model = "ip-adapter-plus.bin",
     url_of_model = "https://huggingface.co/lllyasviel/misc/resolve/main/ip-adapter-plus_sdxl_vit-h.bin",
-    basename_of_model = "'ip-adapter-plus_sdxl_vit-h.bin"
+    basename_of_model = "'ip-adapter-plus_sdxl_vit-h"
 )
 
 ImagePromptAdapterNegative = _BaseControlNetModelFile(
-    filename_of_model = "fooocus_ip_negative",
+    filename_of_model = "fooocus_ip_negative.safetensors",
     url_of_model = "https://huggingface.co/lllyasviel/misc/resolve/main/fooocus_ip_negative.safetensors",
-    basename_of_model = "fooocus_ip_negative.safetensors"
+    basename_of_model = "fooocus_ip_negative"
 )
 
 ImagePromptAdapterFace = _BaseControlNetModelFile(
-    filename_of_model = "ip-adapter-plus-face",
+    filename_of_model = "ip-adapter-plus-face.bin",
     url_of_model = "https://huggingface.co/lllyasviel/misc/resolve/main/ip-adapter-plus-face_sdxl_vit-h.bin",
-    basename_of_model = "ip-adapter-plus-face_sdxl_vit-h.bin"
+    basename_of_model = "ip-adapter-plus-face_sdxl_vit-h"
 )
 
 PyraCanny = _BaseControlNetModelFile(
-    filename_of_model = 'canny',
+    filename_of_model = 'control-lora-canny-rank128.safetensors',
     url_of_model = 'https://huggingface.co/lllyasviel/misc/resolve/main/control-lora-canny-rank128.safetensors',
-    basename_of_model = 'control-lora-canny-rank128.safetensors',
+    basename_of_model = 'control-lora-canny-rank128',
 )
 
 CPDS = _BaseControlNetModelFile(
-    filename_of_model = 'cpds',
+    filename_of_model = 'fooocus_xl_cpds_128.safetensors',
     url_of_model = 'https://huggingface.co/lllyasviel/misc/resolve/main/fooocus_xl_cpds_128.safetensors',
-    basename_of_model = 'fooocus_xl_cpds_128.safetensors',
+    basename_of_model = 'fooocus_xl_cpds_128',
 )
 
 class InpaintModelFiles:
@@ -155,19 +155,19 @@ class SAM_Files(Enum):
     VIT_B = _SAMFile(
         filename_of_model = 'sam_vit_b_01ec64.pth',
         url_of_model = 'https://huggingface.co/mashb1t/misc/resolve/main/sam_vit_b_01ec64.pth',
-        basename_of_model = 'sam_vit_b_01ec64.pth'
+        basename_of_model = 'sam_vit_b_01ec64'
     )
 
     VIT_L = _SAMFile(
         filename_of_model = 'sam_vit_l_0b3195.pth',
         url_of_model = 'https://huggingface.co/mashb1t/misc/resolve/main/sam_vit_l_0b3195.pth',
-        basename_of_model = 'sam_vit_l_0b3195.pth'
+        basename_of_model = 'sam_vit_l_0b3195'
     )
 
     VIT_H = _SAMFile(
         filename_of_model = 'sam_vit_h_4b8939.pth',
         url_of_model = 'https://huggingface.co/mashb1t/misc/resolve/main/sam_vit_h_4b8939.pth',
-        basename_of_model = 'sam_vit_h_4b8939.pth'
+        basename_of_model = 'sam_vit_h_4b8939'
     )
 
 
@@ -177,21 +177,21 @@ class VaeApproxFiles:
         folder_path_of_model = FolderPathsConfig.path_vae,
         filename_of_model = 'xlvaeapp.pth',
         url_of_model = 'https://huggingface.co/lllyasviel/misc/resolve/main/xlvaeapp.pth',
-        basename_of_model = 'xlvaeapp.pth'
+        basename_of_model = 'xlvaeapp'
     )
 
     VaeAppSD15 = _BaseModelFile(
         folder_path_of_model= FolderPathsConfig.path_vae,
         filename_of_model = 'vaeapp_sd15.pth',
         url_of_model = 'https://huggingface.co/lllyasviel/misc/resolve/main/vaeapp_sd15.pt',
-        basename_of_model = 'vaeapp_sd15.pth'
+        basename_of_model = 'vaeapp_sd15'
     )
 
     XlToV1Interposer = _BaseModelFile(
         folder_path_of_model = FolderPathsConfig.path_vae,
         filename_of_model = 'xl-to-v1_interposer-v4.0.safetensors',
         url_of_model = 'https://huggingface.co/mashb1t/misc/resolve/main/xl-to-v1_interposer-v4.0.safetensors',
-        basename_of_model = 'xl-to-v1_interposer-v4.0.safetensors'
+        basename_of_model = 'xl-to-v1_interposer-v4.0'
     )
 
 
@@ -203,6 +203,7 @@ class FaceXLibModelFiles:
         filename_of_model = 'detection_Resnet50_Final.pth',
         folder_path_of_model= FolderPathsConfig.path_facexlib,
         url_of_model = 'https://github.com/xinntao/facexlib/releases/download/v0.1.0/detection_Resnet50_Final.pth',
+        
     )
 
     RetinaFaceMobile025 = _BaseModelFile(
