@@ -1,6 +1,5 @@
 import os, sys
 
-from modules.model_file_utils.model_file_config import ControlNetTasks
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(CURR_DIR.split("tests")[0])
 
@@ -8,6 +7,7 @@ import consts
 import dotenv
 import pytest
 from requests import Session as RequestsSession
+from modules.model_file_utils.model_file_config import ControlNetTasks
 
 from h3_utils.config import ImageGenerationObject
 from h3_utils.logging_util import LoggingUtil
@@ -15,8 +15,8 @@ from h3_utils.logging_util import LoggingUtil
 dotenv.load_dotenv()
 
 ACCEPTED_API_TOKEN_FOR_IMAGE_GENERATION = os.environ.get("ACCEPTED_API_TOKEN_FOR_IMAGE_GENERATION")
-url_base = consts.SERVER_URL
-
+url_base = consts.SERVER_URL_LOCAL
+from tests.test_params import faceswap_reference_image_url, faceswap_target_image_url
 log = LoggingUtil(__name__).get_logger()
 
 class DataManager:
@@ -35,8 +35,16 @@ def data_manager_fixture() -> DataManager:
 def test_create_image_order_cdps(data_manager: DataManager):
     new_image_order = ImageGenerationObject()
     new_image_order.prompt = "Cat oil painting sun moon smoke classical museum portrait painting oil on canvas rembrandt"
-    cdps_task = ControlNetTasks.
-    response = data_manager.session.post(f"{url_base}/gen/photo/normal", data=new_image_order.model_dump_json(), headers=data_manager.headers_for_auth)
+    
+    faceswap_reference = ControlNetTasks.FaceSwap
+    faceswap_reference.image_url = faceswap_reference_image_url
+
+    faceswap_target = ControlNetTasks.PyraCanny
+    faceswap_target.image_url = faceswap_target_image_url
+
+    new_image_order.controlnet_tasks.append(faceswap_reference)
+    new_image_order.controlnet_tasks.append(faceswap_target)
+    response = data_manager.session.post(f"{url_base}/photo", data=new_image_order.model_dump_json(), headers=data_manager.headers_for_auth)
     if response.status_code == 201:
         assert True
         response_json = response.json()
