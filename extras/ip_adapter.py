@@ -196,7 +196,7 @@ class IpaAdapterManagement:
     def preprocess(self, img: np.ndarray, ip_adapter_path: str):
         entry = self.ip_adapters[ip_adapter_path]
 
-        ldm_patched.modules.model_management.load_model_gpu(self.clip_vision.patcher)
+        model_management.load_model_gpu(self.clip_vision.patcher)
         
         pixel_values = clip_preprocess(numpy_to_pytorch(img).to(self.clip_vision.load_device))
         outputs = self.clip_vision.model(pixel_values=pixel_values, output_hidden_states=True)
@@ -213,12 +213,12 @@ class IpaAdapterManagement:
 
         cond = cond.to(device=ip_adapter.load_device, dtype=ip_adapter.dtype)
 
-        ldm_patched.modules.model_management.load_model_gpu(image_proj_model)
+        model_management.load_model_gpu(image_proj_model)
         cond = image_proj_model.model(cond).to(
             device=ip_adapter.load_device, dtype=ip_adapter.dtype
         )
 
-        ldm_patched.modules.model_management.load_model_gpu(ip_layers)
+        model_management.load_model_gpu(ip_layers)
 
         if ip_unconds is None:
             uncond = self.ip_negative.to(device=self.load_device, dtype=ip_adapter.dtype)
