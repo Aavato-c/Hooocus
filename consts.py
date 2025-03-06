@@ -14,6 +14,7 @@ SHOULD_LOG_PERFORMANCE = False
 
 
 SERVER_URL = os.environ.get("SERVER_URL")
+SERVER_URL_LOCAL = "http://127.0.0.1:8111"
 if SERVER_URL is None:
     raise ValueError("SERVER_URL is not set.")
 
