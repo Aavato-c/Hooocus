@@ -99,3 +99,4 @@ models/*
 scripts/Hooocus_server_supervisorctl.conf
 tests/test_models.py
 tests/procedual_prompt_gen.py
+tests/test_params.py
