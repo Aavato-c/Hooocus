@@ -121,7 +121,8 @@ auth_doc = {
 
 @app.get("/imagen_manual")
 def get_manual():
-    return HTMLResponse(content=open("modules/server/imagen_manual.html", "r").read())
+    #return HTMLResponse(content=open("modules/server/imagen_manual.html", "r").read())
+    return JSONResponse(content="Not available", status_code=200)
 
 @app.post("/testgen_photo")
 def get_photo_genobject(
