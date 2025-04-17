@@ -397,9 +397,12 @@ class YieldObject(BaseModel):
 
 class ImageGenerationObject(_InitialImageGenerationParams):
     schema_version: Optional[str] = Field(SCHEMA_VERSION, description="Current schema version.")
+    skip_log_save: bool = False
     
     prepared_tasklets: Optional[TaskletObject] = None
     processing_time: Optional[float] = None
+
+    use_empty_callback: Optional[bool] = False
 
     # TODO: This here or at prompt?
     use_prompt_expansion: bool = True
@@ -425,6 +428,8 @@ class ImageGenerationObject(_InitialImageGenerationParams):
                 log.error("Could not serialize model.")
 
     def save_log(self):
+        if self.skip_log_save:
+            return
         try:
             json_model = self.model_dump_json()
             if update_imageorder_log(self.uid, json_model):
@@ -449,6 +454,10 @@ class ImageGenerationObject(_InitialImageGenerationParams):
                     log.error("Could not save log.")
             else:
                 log.error(f"Could not save log: {e}")
+
+    
+    def update_seed(self):
+        self.seed = random.randint(0, 2**63 - 1)
 
     def _prepare_downloads(self):
 
@@ -611,7 +620,6 @@ class ImageGenerationObjectForRequests(BaseModel):
     # ERROR HERE
     adaptive_cfg: float = Field(7.0, description="The default cfg tsnr to use.", ge=1.0, le=30.0)
     cfg_scale: float = Field(4.0,description="Higher value means style is cleaner, vivider, and more artistic.", ge=1.0, le=30.0)
-    cfg_tsnr: float = Field(7.0, description="The default cfg tsnr to use.")
 
     adm_scaler_end: float = Field(0.3, description="The default adm scaler end to use.", ge=0.0, le=1.0)
     adm_scaler_negative: float = Field(0.8, description="The default adm scaler negative to use.", ge=0.1, le=3.0)

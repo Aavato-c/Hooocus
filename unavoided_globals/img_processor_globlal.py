@@ -14,8 +14,12 @@ from h3_utils.logging_util import LoggingUtil
 log = LoggingUtil(__name__).get_logger()
 
 
-def create_image_processor():
+def create_image_processor(guid = None):
     from modules.async_worker import ImageTaskProcessor
+    if guid is not None:
+        shared.GLOBAL_GUNICORN_ID = guid
+        shared.INSTANCE_COUNT = 1
+        log.warning(f"GUID set to {guid}.")
     if shared.IMAGE_PROCESSOR:
         log.warning("Image processor already exists.")
         return

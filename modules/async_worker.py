@@ -121,6 +121,7 @@ class ImageTaskProcessor:
         from modules.imagen_utils.imagen_patch_utils.patch import patch_all
         patch_all()
         self.dld = ImportDelayer()
+        self.output_folder = OUTPUT_DIR
         self.pid = None
         self.instance_count = instance_count
         self.global_uuid = global_uuid
@@ -277,6 +278,9 @@ class ImageTaskProcessor:
         id = _self.tasks.index(prepared_task)
         uid = prepared_task.uid
 
+        def _empty_callback(step, x0, x, total_steps, y, preview_yelder=_self.preview_yelder):
+            pass
+
         def _callback(step, x0, x, total_steps, y, preview_yelder=_self.preview_yelder):
             if step == 0:
                 _self.callback_steps = 0
@@ -325,6 +329,12 @@ class ImageTaskProcessor:
                 uid=uid
             )
         )
+
+        if parent_task.use_empty_callback == True:
+            final_callback = _empty_callback
+        else:
+            final_callback = _callback
+
         imgs = _self.pipeline.process_diffusion(
             # Shared parameters of all tasklets
             steps=parent_task.steps,
@@ -342,7 +352,7 @@ class ImageTaskProcessor:
             negative_cond=prepared_task.encoded_negative_cond,
             
             # Class / function bound parameters
-            callback=_callback,
+            callback=final_callback,
             scheduler_name=_self.final_scheduler_name,
             latent=_self.initial_latent,
             denoise=_self.denoising_strength,
@@ -355,7 +365,7 @@ class ImageTaskProcessor:
         imgs = _self.post_process_images(imgs)
         # current_progress = int(self.current_progress + (100 - preparation_steps) / float(self.all_steps) * parent_task.steps)
         logger.debug(f"Saving image to system ...")
-        img_paths = save_images(imgs, "webp", filename_base=prepared_task.uid, output_folder_path=OUTPUT_DIR)
+        img_paths = save_images(imgs, "webp", filename_base=prepared_task.uid, output_folder_path=_self.output_folder)
         img_paths = [os.path.basename(x) for x in img_paths]
         logger.info(f"Image saved to system.")
         for imagepath in img_paths:
@@ -399,7 +409,8 @@ class ImageTaskProcessor:
         del prepared_task.encoded_negative_cond
         _self.generation_task.prepared_tasklets = prepared_task
         _self.generation_task.processing_time = processing_time
-        _self.generation_task.save_log()
+        if _self.generation_task.skip_log_save == False:
+            _self.generation_task.save_log()
         try:
             _self.generation_task.save_log_json()
         except Exception as e:

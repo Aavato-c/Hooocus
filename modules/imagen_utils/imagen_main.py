@@ -21,7 +21,7 @@ from unavoided_globals.img_processor_globlal import create_image_processor
 from PIL import Image, ImageDraw, ImageFont
 from h3_utils.logging_util import LoggingUtil, PerfLogger
 import time
-from h3_utils.config import ImageGenerationObject, DefaultConfigImageGen
+from h3_utils.config import ImageGenerationObject, DefaultConfigImageGen, ImageGenerationObjectForRequests
 from h3_utils.flags import OUTPUTFORMAT_LIT, OutputFormat, RETURN_FORMATS
 
 from cProfile import Profile
@@ -154,6 +154,107 @@ def img_convert_from_generations(image: ndarray, img_format: str = "webp") -> by
         raise Exception("Error encoding image.")
 
     return bytearray(encodedImage)
+
+
+def generate_from_batch(seed_generation_task: ImageGenerationObjectForRequests,unique_id: str, outputfolder: str = "/home/kake/Hooocus/modules/imagen_utils/secondoutputs"):
+    from unavoided_globals.shared import IMAGE_PROCESSOR as imgProcessor
+
+    imgProcessor: ImageTaskProcessor
+    if not imgProcessor:
+        # GLOBAL VAR USAGE
+        create_image_processor(guid = unique_id)
+        from unavoided_globals.shared import IMAGE_PROCESSOR as imgProcessor
+
+        if not imgProcessor:
+            raise Exception("Image processor not created.")
+
+    imgProcessor.output_folder = outputfolder
+    normal_template = DefaultConfigImageGen
+    newtask = ImageGenerationObject()
+    newtask = newtask.model_copy(update=seed_generation_task.model_dump())
+    print("New seed task: ", newtask.seed)
+    newtask.use_empty_callback = True
+    newtask.skip_log_save = True
+    
+    if newtask.uid != unique_id:
+        newtask.uid = unique_id
+
+    final_task = normal_template.model_copy(update=newtask.model_dump())
+    imgProcessor.generation_tasks.append(final_task)
+    finished = False
+    max_waits = 100
+    iterations = 0
+
+    if newtask.image_number > 1:
+        raise Exception("Image number must be 1.")
+
+    log.debug("In generate_image_to_stream. Starting to yield images.")
+
+    while not finished:
+        iterations += 1
+        if max_waits <= 0:
+            raise Exception("Max waits reached.")
+        time.sleep(0.2)
+
+        if unique_id not in imgProcessor.yields:
+            time.sleep(1)
+            max_waits -= 1
+            continue
+
+        if len(imgProcessor.yields[unique_id]) > 0:
+            try:
+                img_res = imgProcessor.yields[unique_id].pop(0)
+            except KeyError as e:
+                if imgProcessor.processing:
+                    log.info("Processing...")
+                    time.sleep(10.0)
+                    continue
+                else:
+                    log.error("No image processing.")
+                    raise e
+            
+            except Exception as e:
+                raise e
+
+
+            try:
+
+                match img_res.yield_type:
+
+                    case "starting":
+                        log.debug("Got starting.")
+                        time.sleep(0.2)
+
+                    case "preview":
+                        log.debug("Got preview.")
+
+                    case "result":
+                        log.debug("Got result.")
+
+                    case "uri":
+                        log.debug("Got uri.")
+                        return img_res.message
+
+                    case "finish":
+                        log.debug("Got finish.")
+                        finished = True
+
+
+                    case "waiting":
+                        iteration_image = iterations % 3
+                        time.sleep(1)
+
+                    case _:
+                        raise Exception("Invalid yield type.")
+            
+            except Exception as e:
+                log.error(f"Error in image generation: {e}")
+                raise e
+        else:
+            if imgProcessor.processing:
+                max_waits -= 1
+                time.sleep(1)
+                continue
 
 
 def generate_image_to_stream(
