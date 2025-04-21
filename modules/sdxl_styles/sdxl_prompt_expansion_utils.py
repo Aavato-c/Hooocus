@@ -9,16 +9,16 @@ import math
 
 from random import Random
 
-from modules.sdxl_styles.prompt_styles import PromptStyles, VALID_STYLE_NAMES
+from modules.sdxl_styles.prompt_styles import PromptStyles, VALID_STYLE_NAMES, PromptStylesEnum
 
 
 def get_random_style() -> str:
-    return PromptStyles[random.choice(VALID_STYLE_NAMES)].value
+    return PromptStylesEnum[random.choice(VALID_STYLE_NAMES)].value
 
 
 def apply_style(style, positive, is_lambda_style=False):
     if not is_lambda_style:
-        _name, p, n = PromptStyles[style].value.tuple
+        _name, p, n = PromptStylesEnum[style].value.tuple
     else:
         _name, p, n = style
 
