@@ -1,11 +1,12 @@
 import os, sys
 
-from consts import SHOULD_LOG_PERFORMANCE
-from unavoided_globals import global_model_management, img_processor_globlal
 
 currdir = os.path.abspath(__file__)
 sys.path.append(currdir.split("Hooocus")[0] + "Hooocus")
 
+from consts import SHOULD_LOG_PERFORMANCE
+from h3_utils.path_configs import FolderPathsConfig
+from unavoided_globals import global_model_management, img_processor_globlal
 import base64
 import io
 import json
