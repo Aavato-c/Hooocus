@@ -903,6 +903,14 @@ class ImageTaskProcessor:
                 logger.info(f"Tasklet processed.")
 
             self.pipeline.prepare_text_encoder(async_call=True)
+
+        except KeyError as e:
+            if "torch.OutOfMemoryError: CUDA out of memory." in str(e):
+                raise Exception(f"CUDA out of memory error: {e}")
+            else:
+                logger.error(f"KeyError: {e}")
+                raise e
+
         except Exception as e:
             logger.info(f"Error processing task: {str(e)}")
             traceback.print_exc()
