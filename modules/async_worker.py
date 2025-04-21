@@ -1413,10 +1413,9 @@ def save_images(imgs: List[np.ndarray], output_format: str, filename_base: str =
     """
     if output_folder_path:
         
-        if "." in output_folder_path:
-            raise ValueError("Invalid output folder path. Did you mean to provide a folder name instead of a file path?")
         if not os.path.exists(output_folder_path):
             os.makedirs(output_folder_path)
+            logger.info(f"Created output folder: {output_folder_path}")
     
     paths = []
     n = 1
@@ -1426,6 +1425,14 @@ def save_images(imgs: List[np.ndarray], output_format: str, filename_base: str =
             save_path = os.path.join(output_folder_path, f"{get_filename_string()}{filename_tail}")
         else:
             save_path = os.path.join(output_folder_path, f"{filename_base}{filename_tail}")
+        while os.path.exists(save_path):
+            n += 1
+            filename_tail = f"_{n}.{output_format}"
+            save_path = os.path.join(output_folder_path, f"{filename_base}{filename_tail}")
+            if n > 100:
+                logger.error(f"Too many files with the same name. Please check the output folder: {output_folder_path}")
+                raise ValueError(f"Too many files with the same name. Please check the output folder: {output_folder_path}")
+        
         paths.append(save_path)
         logger.info(f"Saving image to {save_path} ...")
         PIL.Image.fromarray(img).save(save_path)

@@ -72,7 +72,7 @@ log.debug(f"Traceback: {traceback.format_stack()}")
 
 preset_chosen: str = "default"  # Modify this to change the preset
 current_preset = {}
-OUTPUT_DIR = os.getenv("OUTPUT_DIR", "outputs")
+OUTPUT_DIR = FolderPathsConfig.path_outputs
 CustomNDArrayType: TypeAlias = Union[NDArray, List[NDArray]]
 
 SCHEMA_VERSION = "25.01.22.V1"
@@ -398,6 +398,7 @@ class YieldObject(BaseModel):
 class ImageGenerationObject(_InitialImageGenerationParams):
     schema_version: Optional[str] = Field(SCHEMA_VERSION, description="Current schema version.")
     skip_log_save: bool = False
+    output_folder: Optional[str] = Field(OUTPUT_DIR, description="The default output folder to use.")
     
     prepared_tasklets: Optional[TaskletObject] = None
     processing_time: Optional[float] = None

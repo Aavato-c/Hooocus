@@ -156,7 +156,7 @@ def img_convert_from_generations(image: ndarray, img_format: str = "webp") -> by
     return bytearray(encodedImage)
 
 
-def generate_from_batch(seed_generation_task: ImageGenerationObjectForRequests,unique_id: str, outputfolder: str = "/home/kake/Hooocus/modules/imagen_utils/secondoutputs"):
+def generate_from_batch(seed_generation_task: ImageGenerationObjectForRequests,unique_id: str, outputfolder: str = FolderPathsConfig.path_outputs):
     from unavoided_globals.shared import IMAGE_PROCESSOR as imgProcessor
 
     imgProcessor: ImageTaskProcessor
