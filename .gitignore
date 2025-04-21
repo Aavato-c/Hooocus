@@ -103,3 +103,4 @@ tests/test_params.py
 modules/imagen_utils/secondoutputs
 tests/*.json
 *.log
+batchgen/
